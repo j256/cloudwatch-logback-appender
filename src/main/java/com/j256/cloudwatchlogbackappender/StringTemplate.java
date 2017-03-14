@@ -89,7 +89,6 @@ public class StringTemplate {
 	private final String prefix;
 	private final String suffix;
 	private final TemplatePart[] templateParts;
-	private final int templateLength;
 
 	/**
 	 * @param template
@@ -115,18 +114,15 @@ public class StringTemplate {
 		this.prefix = prefix;
 		this.suffix = suffix;
 		this.templateParts = extractParts(template);
-		this.templateLength = template.length();
 	}
 
 	/**
 	 * Convert and return a new string with the substitutions.
 	 */
-	public String render(Map<String, Object> replacementMap) {
-		StringBuilder sb = new StringBuilder(templateLength);
+	public void render(Map<String, Object> replacementMap, StringBuilder sb) {
 		for (TemplatePart templatePart : templateParts) {
 			templatePart.render(sb, replacementMap);
 		}
-		return sb.toString();
 	}
 
 	@Override

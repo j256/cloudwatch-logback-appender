@@ -2,8 +2,8 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>com.j256.cloudwatch-logback-appender</groupId>
-	<artifactId>cloudwatch-logback-appender</artifactId>
+	<groupId>com.j256.cloudwatchlogbackappender</groupId>
+	<artifactId>cloudwatchlogbackappender</artifactId>
 	<version>0.1-SNAPSHOT</version>
 	<packaging>jar</packaging>
 	<name>Cloudwatch Logback Appender</name>
@@ -198,20 +198,21 @@
 		</pluginManagement>
 	</build>
 	<properties>
-		<logback.version>1.0.11</logback.version>
 		<!-- optional dependencies -->
+		<logback.version>1.0.11</logback.version>
 		<aws-version>1.10.40</aws-version>
 		<!-- test dependencies -->
 		<junit-version>4.8.1</junit-version>
 		<easymock-version>2.3</easymock-version>
 	</properties>
 	<dependencies>
+		<!-- optional dependencies -->
 		<dependency>
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-classic</artifactId>
 			<version>${logback.version}</version>
+			<optional>true</optional>
 		</dependency>
-		<!-- optional dependencies -->
 		<dependency>
 			<groupId>com.amazonaws</groupId>
 			<artifactId>aws-java-sdk</artifactId>
