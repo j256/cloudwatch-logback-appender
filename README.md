@@ -4,8 +4,7 @@
 
 This package provides a logback appender that writes its log events to Cloudwatch.  Before you say it,
 there seem to be many projects like this out there but I could find none of them that were
-self-contained and that we published to the central Maven repo.  So here we go reinventing the wheel
-again...  Sigh.
+self-contained and that we published to the central Maven repo.
 
 The git repository is:
 	https://github.com/j256/cloudwatch-logback-appender
@@ -41,10 +40,25 @@ Minimal logback appender configuration:
 	<region>us-east-1</region>
 	<logGroup>your-log-group-name-here</logGroup>
 	<logStream>your-log-stream-name-here</logStream>
+	<!-- possible layout pattern -->
+	<layout>
+		<pattern>[%thread] %level %logger{20} - %msg</pattern>
+	</layout>
 </appender>
 ```
 
-Complete list of the appender properties.
+You may want to use our Ec2PatternLayout class which adds support for %instance, %instanceName, %in, %instanceId, and
+%iid, then use the following layout stanza.
+
+``` xml
+	<layout class="com.j256.cloudwatchlogbackappender.Ec2PatternLayout">
+		<pattern>[%instance] [%thread] %level %logger{20} - %msg</pattern>
+	</layout>
+```
+
+*NOTE:* If the instance-name is not able to be queried then the instance-id will be used for the name instead.
+
+Here is the complete list of the appender properties.
 
 | Property | Type | Description |
 | -------- | ---- | ----------- |
@@ -53,7 +67,6 @@ Complete list of the appender properties.
 | `region` | *string* | AWS region |
 | `logGroup` | *string* | Log group name |
 | `logStream` | *string* | Log stream name |
-| `messagePattern` | *string* | **Default: see below**<br/> Pattern of the message written to cloudwatch. |
 | `maxBatchSize` | *integer* | **Default: 128**<br/>Maximum number of log events put into cloudwatch in single request. |
 | `maxBatchTimeMillis` | *integer* | **Default: 5000**<br/>Maximum time in milliseconds to collect log events to submit batch. |
 | `maxQueueWaitTimeMillis` | *integer* | **Default: 100**<br/>Maximum time in milliseconds to wait if internal queue is full before dropping log event on the floor. |
@@ -61,22 +74,6 @@ Complete list of the appender properties.
 | `internalQueueSize` | *integer* | **Default: 8192**<br/>Size of the internal log event queue. |
 | `createLogDests` | *boolean* | **Default: true**<br/>Create the CloudWatch log and stream if they don't exist.  Set to **false** to require fewer IAM policy actions. |
 | `logExceptions` | *boolean* | **Default: true**<br/>Write exceptions to CloudWatch as log events. |
-
-The ```messagePattern``` defines the format of the event when posted to CloudWatch.  The default is:
-
-``` text
-[{instance}] [{thread}] {level} {logger} - {msg}
-```
-
-It allows the following replacement token names surrounded by curly braces.  
-
-| Token | Description |
-| -------- | ----------- |
-| `instance` | Name of the EC2 instance or "unknown" if not in EC2 or not known |
-| `thread` | Name of the thread that generated the log event |
-| `level` | Name of the log level of the event |
-| `logger` | Name of the logger – often the class name |
-| `msg` | Message from the event (with any arguments expanded) |
 
 ### Required IAM policy
 

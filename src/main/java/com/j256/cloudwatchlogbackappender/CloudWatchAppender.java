@@ -2,9 +2,7 @@ package com.j256.cloudwatchlogbackappender;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -37,6 +35,7 @@ import com.amazonaws.util.EC2MetadataUtils;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.spi.IThrowableProxy;
 import ch.qos.logback.classic.spi.StackTraceElementProxy;
+import ch.qos.logback.core.Layout;
 import ch.qos.logback.core.UnsynchronizedAppenderBase;
 
 /**
@@ -58,9 +57,6 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	private static final long DEFAULT_MAX_QUEUE_WAIT_TIME_MILLIS = 100;
 	/** initial startup sleep time to wait for the log stuff to configure itself before we log stuff internally */
 	private static final long DEFAULT_INITIAL_STARTUP_SLEEP_MILLIS = 2000;
-	/** if we don't know the ec2 instance name (or aren't in ec2) then return this */
-	private static final String EC2_INSTANCE_UNKNOWN = "unknown";
-	private static final String DEFAULT_MESSAGE_PATTERN = "[{instance}] [{thread}] {level} {logger} - {msg}";
 	private static final boolean DEFAULT_LOG_EXCEPTIONS = true;
 
 	private String accessKey;
@@ -68,7 +64,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	private String region;
 	private String logGroup;
 	private String logStream;
-	private String messagePattern = DEFAULT_MESSAGE_PATTERN;
+	private Layout<ILoggingEvent> layout;
 	private int maxBatchSize = DEFAULT_MAX_BATCH_SIZE;
 	private long maxBatchTimeMillis = DEFAULT_MAX_BATCH_TIME_MILLIS;
 	private long maxQueueWaitTimeMillis = DEFAULT_MAX_QUEUE_WAIT_TIME_MILLIS;
@@ -82,7 +78,6 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	private BlockingQueue<ILoggingEvent> loggingEventQueue;
 	private Thread cloudWatchWriterThread;
 	private final ThreadLocal<Boolean> stopMessagesThreadLocal = new ThreadLocal<Boolean>();
-	private StringTemplate messageTemplate;
 	private volatile boolean warningMessagePrinted;
 
 	public CloudWatchAppender() {
@@ -114,7 +109,6 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			throw new IllegalStateException("Log stream name not set or invalid for appender: " + logStream);
 		}
 
-		messageTemplate = new StringTemplate(messagePattern, "{", "}");
 		loggingEventQueue = new ArrayBlockingQueue<ILoggingEvent>(internalQueueSize);
 
 		// create our writer thread in the background
@@ -191,9 +185,9 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		this.logStream = logStream;
 	}
 
-	// not-required, default is DEFAULT_PATTERN
-	public void setMessagePattern(String messagePattern) {
-		this.messagePattern = messagePattern;
+	// required
+	public void setLayout(Layout<ILoggingEvent> layout) {
+		this.layout = layout;
 	}
 
 	// not-required, default is DEFAULT_MAX_BATCH_SIZE
@@ -237,9 +231,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	private class CloudWatchWriter implements Runnable {
 
 		private String sequenceToken;
-		private String instanceName;
 		private final StringBuilder sb = new StringBuilder(1024);
-		private final Map<String, Object> templateMap = new HashMap<String, Object>();
 
 		@Override
 		public void run() {
@@ -259,7 +251,8 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			awsLogsClient.setRegion(RegionUtils.getRegion(region));
 			verifyLogGroupExists();
 			verifLogStreamExists();
-			instanceName = requestInstanceName(awsCredentials);
+
+			lookupInstanceName(awsCredentials);
 			addInfo(getClass().getSimpleName() + " started");
 
 			List<ILoggingEvent> events = new ArrayList<ILoggingEvent>(maxBatchSize);
@@ -381,11 +374,12 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			}
 		}
 
-		private String requestInstanceName(AWSCredentials awsCredentials) {
+		private void lookupInstanceName(AWSCredentials awsCredentials) {
 			String instanceId = EC2MetadataUtils.getInstanceId();
 			if (instanceId == null) {
-				return EC2_INSTANCE_UNKNOWN;
+				return;
 			}
+			Ec2InstanceIdConverter.setInstanceId(instanceId);
 			try {
 				AmazonEC2Client ec2Client = new AmazonEC2Client(awsCredentials);
 				DescribeTagsRequest request = new DescribeTagsRequest();
@@ -395,25 +389,21 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 				List<TagDescription> tags = result.getTags();
 				for (TagDescription tag : tags) {
 					if ("Name".equals(tag.getKey())) {
-						return tag.getValue();
+						Ec2InstanceNameConverter.setInstanceName(tag.getValue());
+						return;
 					}
 				}
 				addInfo("Could not find EC2 instance name in tags: " + tags);
 			} catch (AmazonServiceException ase) {
 				addInfo("Looking up EC2 instance-name threw: " + ase);
 			}
-			return EC2_INSTANCE_UNKNOWN;
+			// if we can't lookup the instance name then set is as the instance-id
+			Ec2InstanceNameConverter.setInstanceName(instanceId);
 		}
 
 		private String eventToString(ILoggingEvent loggingEvent) {
 			sb.setLength(0);
-			templateMap.clear();
-			templateMap.put("instance", instanceName);
-			templateMap.put("thread", loggingEvent.getThreadName());
-			templateMap.put("level", loggingEvent.getLevel());
-			templateMap.put("logger", loggingEvent.getLoggerName());
-			templateMap.put("msg", loggingEvent.getFormattedMessage());
-			messageTemplate.render(templateMap, sb);
+			sb.append(layout.doLayout(loggingEvent));
 			// handle any throw information
 			if (logExceptions && loggingEvent.getThrowableProxy() != null) {
 				sb.append('\n');
