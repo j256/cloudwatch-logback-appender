@@ -38,8 +38,8 @@ Minimal logback appender configuration:
 	<accessKey>XXXXXX</accessKey>
 	<secretKey>YYYYYY</secretKey>
 	<region>us-east-1</region>
-	<logGroup>application-name</logGroup>
-	<logStream>general</logStream>
+	<logGroup>your-log-group-name-here</logGroup>
+	<logStream>your-log-stream-name-here</logStream>
 </appender>
 ```
 
@@ -53,13 +53,13 @@ Complete list of the appender properties.
 | `logGroup` | *string* | Log group name |
 | `logStream` | *string* | Log stream name |
 | `messagePattern` | *string* | **Default: see below**<br/> Pattern of the message written to cloudwatch. |
-| `maxBatchSize` | *integer* | **Default: 128**<br/>Maximum number of log events put to cloudwatch in single request. |
+| `maxBatchSize` | *integer* | **Default: 128**<br/>Maximum number of log events put into cloudwatch in single request. |
 | `maxBatchTimeMillis` | *integer* | **Default: 5000**<br/>Maximum time in milliseconds to collect log events to submit batch. |
 | `maxQueueWaitTimeMillis` | *integer* | **Default: 100**<br/>Maximum time in milliseconds to wait if internal queue is full before dropping log event on the floor. |
 | `initialStartupSleepMillis` | *integer* | **Default: 2000**<br/>Time in milliseconds to wait for the log stuff to configure before we can make AWS requests which may generate log events. |
 | `internalQueueSize` | *integer* | **Default: 8192**<br/>Size of the internal log event queue. |
 | `createLogDests` | *boolean* | **Default: true**<br/>Create the CloudWatch log and stream if they don't exist.  Set to **false** to require fewer IAM policy actions. |
-| `logExceptions` | *boolean* | **Default: true**<br/>Log exceptions to CloudWatch. |
+| `logExceptions` | *boolean* | **Default: true**<br/>Write exceptions to CloudWatch as log events. |
 
 The ```messagePattern``` defines the format of the event when posted to CloudWatch.  The default is:
 
@@ -70,7 +70,7 @@ The ```messagePattern``` defines the format of the event when posted to CloudWat
 It allows the following replacement token names surrounded by curly braces.  
 
 | Token | Description |
-| -------- | ---- | ----------- |
+| -------- | ----------- |
 | `instance` | Name of the EC2 instance or "unknown" |
 | `thread` | Name of the thread that generated the log event |
 | `level` | Name of the log level of the event |
