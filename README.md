@@ -46,7 +46,7 @@ Minimal logback appender configuration:
 </appender>
 ```
 
-You may want to use our Ec2PatternLayout class which adds support for %instance, %instanceName, and %in which is replaced
+You may want to use our ```Ec2PatternLayout``` class which adds support for %instance, %instanceName, and %in which is replaced
 with the ec2 instance-name tag.  It also supports %instanceId and %iid for the instance-id as well.
 
 ``` xml
@@ -103,7 +103,7 @@ the following IAM policy is required to create the log group and put log events 
 
 The ```logs:CreateLogGroup``` and ```logs:CreateLogStream``` actions are only required if the appender is creating the
 log-group and stream itself (see ```createLogDests``` option above).  The ```ec2:Describe*``` action is only required
-if you want the appender to query for the ec2 instance name it is on.
+if you want the appender to query for the ec2 instance name it is on – see ```Ec2PatternLayout``` above.
 
 ```json
 {
