@@ -82,8 +82,9 @@ It allows the following replacement token names surrounded by curly braces.
 
 When making any AWS API calls, we typically create a IAM user with specific permissions so if any API keys are stolen,
 the hacker only have limited access to our AWS services.  To get the appender to be able to publish to CloudWatch,
-the following IAM policy is required to create the log group and put log events to CloudWatch.  The
-```logs:CreateLogGroup``` and ```logs:CreateLogStream``` actions are only required if the appender is creating the
+the following IAM policy is required to create the log group and put log events to CloudWatch.
+
+The ```logs:CreateLogGroup``` and ```logs:CreateLogStream``` actions are only required if the appender is creating the
 log-group and stream itself.  The ```ec2:Describe*``` action is only required if you want the appender to query for the
 ec2 instance name it is on.
 
