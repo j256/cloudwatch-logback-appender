@@ -55,6 +55,8 @@ Complete list of the appender properties.
 | `messagePattern` | *string* | **Default: see below**<br/> Pattern of the message written to cloudwatch. |
 | `maxBatchSize` | *integer* | **Default: 128**<br/>Maximum number of log events put to cloudwatch in single request. |
 | `maxBatchTimeMillis` | *integer* | **Default: 5000**<br/>Maximum time in milliseconds to collect log events to submit batch. |
+| `maxQueueWaitTimeMillis` | *integer* | **Default: 100**<br/>Maximum time in milliseconds to wait if internal queue is full before dropping log event on the floor. |
+| `initialStartupSleepMillis` | *integer* | **Default: 2000**<br/>Time in milliseconds to wait for the log stuff to configure before we can make AWS requests which may generate log events. |
 | `internalQueueSize` | *integer* | **Default: 8192**<br/>Size of the internal log event queue. |
 | `createLogDests` | *boolean* | **Default: true**<br/>Create the CloudWatch log and stream if they don't exist.  Set to **false** to require fewer IAM policy actions. |
 | `logExceptions` | *boolean* | **Default: true**<br/>Log exceptions to CloudWatch. |
@@ -77,25 +79,28 @@ It allows the following replacement token names surrounded by curly braces.
 
 ### Required IAM policy
 
-Policy required to create the log group and stream on demand.
+Policy required to create the log group and stream on demand.  The ```logs:CreateLogGroup``` and ```logs:CreateLogStream```
+actions are only required if the appender is creating the log-group and stream itself.  The ```ec2:Describe*``` action
+is only required if you want the appender to query for the ec2 instance name it is on.
 
 ```json
 {
-	"Version": "2012-10-17",
-	"Statement": [
-		{
-			"Effect": "Allow",
-			"Action": [
-				"logs:CreateLogGroup",
-				"logs:CreateLogStream",
-				"logs:DescribeLogGroups",
-				"logs:DescribeLogStreams",
-				"logs:PutLogEvents"
-			],
-			"Resource": [
-				"arn:aws:logs:*:*:*"
-			]
-		}
-	]
-}
-```
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "logs:CreateLogGroup",
+                "logs:CreateLogStream",
+                "logs:DescribeLogGroups",
+                "logs:DescribeLogStreams",
+                "logs:PutLogEvents",
+                "ec2:Describe*"
+            ],
+            "Resource": [
+                "arn:aws:logs:*:*:*",
+                "arn:aws:ec2:*"
+            ]
+        }
+    ]
+}```
