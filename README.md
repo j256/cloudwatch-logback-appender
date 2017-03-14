@@ -71,7 +71,7 @@ Here is the complete list of the appender properties.
 | `logStream` | *string* | Log stream name |
 | `maxBatchSize` | *integer* | **Default: 128**<br/>Maximum number of log events put into CloudWatch in single request. |
 | `maxBatchTimeMillis` | *integer* | **Default: 5000**<br/>Maximum time in milliseconds to collect log events to submit batch. |
-| `maxQueueWaitTimeMillis` | *integer* | **Default: 100**<br/>Maximum time in milliseconds to wait if internal queue is full before dropping log event on the floor. |
+| `maxQueueWaitTimeMillis` | *integer* | **Default: 100**<br/>Maximum time in milliseconds to wait if internal queue is full before using the emergency appender (see below). |
 | `internalQueueSize` | *integer* | **Default: 8192**<br/>Size of the internal log event queue. |
 | `createLogDests` | *boolean* | **Default: true**<br/>Create the CloudWatch log and stream if they don't exist.  Set to **false** to require fewer IAM policy actions. |
 | `logExceptions` | *boolean* | **Default: true**<br/>Write exceptions to CloudWatch as log events. |
@@ -93,6 +93,8 @@ This appender will be used if:
 * there was some problem configuring the CloudWatch or other AWS APIs
 * the internal queue fills up and messages can't be written remotely fast enough
 * there was some problem with the actual put events CloudWatch call – maybe transient network failure
+
+If no emergency appender is configured and a problem does happen then the log messages will be not be persisted.
 
 ### Required IAM policy
 
