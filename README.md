@@ -51,6 +51,8 @@ You may want to use our Ec2PatternLayout class which adds support for %instance,
 %iid, then use the following layout stanza.
 
 ``` xml
+<appender name="CLOUDWATCH" class="com.j256.cloudwatchlogbackappender.CloudWatchAppender">
+	...
 	<layout class="com.j256.cloudwatchlogbackappender.Ec2PatternLayout">
 		<pattern>[%instance] [%thread] %level %logger{20} - %msg</pattern>
 	</layout>
@@ -81,6 +83,8 @@ might result in log events not getting remoted correctly.  To protect against th
 appender to write events to the console or a file by adding the following to your CLOUDWATCH appender stanza:
 
 ``` xml
+<appender name="CLOUDWATCH" class="com.j256.cloudwatchlogbackappender.CloudWatchAppender">
+	...
 	<appender-ref ref="EMERGENCY_FILE" />
 ```
 
