@@ -8,20 +8,14 @@
 
 	<appender name="CLOUDWATCH" class="com.j256.cloudwatchlogbackappender.CloudWatchAppender">
 		<!-- required settings -->
-		<accessKey>AKIAIPZJD2AQM2YM2HWA</accessKey>
-		<secretKey>UxWK9+vaj7XcMt5aeCHSogq4e4Rz9ZLUvbwTX8zP</secretKey>
+		<accessKey>your-iam-user-access-key-goes-here</accessKey>
+		<secretKey>your-iam-user-secret-key-goes-here</secretKey>
 		<region>us-east-1</region>
 		<logGroup>test</logGroup>
 		<logStream>general</logStream>
-		<!-- not required settings, default values shown below -->
 		<layout class="com.j256.cloudwatchlogbackappender.Ec2PatternLayout">
 			<pattern>[%instance] [%thread] %level %logger{20} - %msg</pattern>
 		</layout>
-		<maxBatchSize>128</maxBatchSize>
-		<maxBatchTimeMillis>5000</maxBatchTimeMillis>
-		<internalQueueSize>8192</internalQueueSize>
-		<createLogDests>true</createLogDests>
-		<logExceptions>true</logExceptions>
 	</appender>
 
 	<root level="INFO">
