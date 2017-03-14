@@ -128,4 +128,4 @@ if you want the appender to query for the ec2 instance name it is on – see ```
 ```
 
 Couldn't figure out how to restrict to all ec2 instances.  If you are only doing log requests then
-you can limit to the resource ```arn:aws:logs:*:*:*"'''.
+you can limit to the resource ```arn:aws:logs:*:*:*"```.
