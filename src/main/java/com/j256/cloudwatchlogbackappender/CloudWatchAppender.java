@@ -2,6 +2,7 @@ package com.j256.cloudwatchlogbackappender;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -35,15 +36,18 @@ import com.amazonaws.util.EC2MetadataUtils;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.spi.IThrowableProxy;
 import ch.qos.logback.classic.spi.StackTraceElementProxy;
+import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.Layout;
 import ch.qos.logback.core.UnsynchronizedAppenderBase;
+import ch.qos.logback.core.spi.AppenderAttachable;
 
 /**
  * CloudWatch log appender for logback.
  * 
  * @author graywatson
  */
-public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent> {
+public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent>
+		implements AppenderAttachable<ILoggingEvent> {
 
 	/** size of batch to write to cloudwatch api */
 	private static final int DEFAULT_MAX_BATCH_SIZE = 128;
@@ -55,8 +59,6 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	private static final boolean DEFAULT_CREATE_LOG_DESTS = true;
 	/** max time to wait in millis before dropping a log event on the floor */
 	private static final long DEFAULT_MAX_QUEUE_WAIT_TIME_MILLIS = 100;
-	/** initial startup sleep time to wait for the log stuff to configure itself before we log stuff internally */
-	private static final long DEFAULT_INITIAL_STARTUP_SLEEP_MILLIS = 2000;
 	private static final boolean DEFAULT_LOG_EXCEPTIONS = true;
 
 	private String accessKey;
@@ -65,10 +67,10 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	private String logGroup;
 	private String logStream;
 	private Layout<ILoggingEvent> layout;
+	private Appender<ILoggingEvent> emergencyAppender;
 	private int maxBatchSize = DEFAULT_MAX_BATCH_SIZE;
 	private long maxBatchTimeMillis = DEFAULT_MAX_BATCH_TIME_MILLIS;
 	private long maxQueueWaitTimeMillis = DEFAULT_MAX_QUEUE_WAIT_TIME_MILLIS;
-	private long initialStartupSleepMillis = DEFAULT_INITIAL_STARTUP_SLEEP_MILLIS;
 	private int internalQueueSize = DEFAULT_INTERNAL_QUEUE_SIZE;
 	private boolean createLogDests = DEFAULT_CREATE_LOG_DESTS;
 	private boolean logExceptions = DEFAULT_LOG_EXCEPTIONS;
@@ -148,11 +150,13 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		}
 
 		// skip it if we just went recursive
-		Boolean guarded = stopMessagesThreadLocal.get();
-		if (guarded == null || !guarded) {
+		Boolean stopped = stopMessagesThreadLocal.get();
+		if (stopped == null || !stopped) {
 			try {
 				if (!loggingEventQueue.offer(loggingEvent, maxQueueWaitTimeMillis, TimeUnit.MILLISECONDS)) {
-					// TODO: if this fails, we should log it locally or something
+					if (emergencyAppender != null) {
+						emergencyAppender.doAppend(loggingEvent);
+					}
 				}
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
@@ -205,11 +209,6 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		this.maxQueueWaitTimeMillis = maxQueueWaitTimeMillis;
 	}
 
-	// not-required, default is DEFAULT_INITIAL_STARTUP_SLEEP_MILLIS
-	public void setInitialStartupSleepMillis(long initialStartupSleepMillis) {
-		this.initialStartupSleepMillis = initialStartupSleepMillis;
-	}
-
 	// not-required, default is DEFAULT_INTERNAL_QUEUE_SIZE
 	public void setInternalQueueSize(int internalQueueSize) {
 		this.internalQueueSize = internalQueueSize;
@@ -225,6 +224,60 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		this.logExceptions = logExceptions;
 	}
 
+	@Override
+	public void addAppender(Appender<ILoggingEvent> appender) {
+		if (emergencyAppender != null) {
+			emergencyAppender.stop();
+		}
+		emergencyAppender = appender;
+		appender.start();
+	}
+
+	@Override
+	public Iterator<Appender<ILoggingEvent>> iteratorForAppenders() {
+		throw new UnsupportedOperationException("Don't know how to create iterator");
+	}
+
+	@Override
+	public Appender<ILoggingEvent> getAppender(String name) {
+		if (emergencyAppender != null && emergencyAppender.getName().equals(name)) {
+			return emergencyAppender;
+		} else {
+			return null;
+		}
+	}
+
+	@Override
+	public boolean isAttached(Appender<ILoggingEvent> appender) {
+		return (emergencyAppender == appender);
+	}
+
+	@Override
+	public void detachAndStopAllAppenders() {
+		emergencyAppender.stop();
+		emergencyAppender = null;
+	}
+
+	@Override
+	public boolean detachAppender(Appender<ILoggingEvent> appender) {
+		if (emergencyAppender == appender) {
+			emergencyAppender = null;
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	@Override
+	public boolean detachAppender(String name) {
+		if (emergencyAppender != null && emergencyAppender.getName().equals(name)) {
+			emergencyAppender = null;
+			return true;
+		} else {
+			return false;
+		}
+	}
+
 	/**
 	 * Background thread that writes the log events to cloudwatch.
 	 */
@@ -237,23 +290,13 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		public void run() {
 
 			try {
-				/*
-				 * We sleep here because we want the various log subsystems to get wired up correctly before we start
-				 * making requests which can cause recursion.
-				 */
-				Thread.sleep(initialStartupSleepMillis);
-			} catch (InterruptedException e) {
-				// ignore
+				stopMessagesThreadLocal.set(true);
+				initialize();
+			} catch (Exception e) {
+				addError("Problems initializing cloudwatch writer", e);
+			} finally {
+				stopMessagesThreadLocal.set(false);
 			}
-
-			AWSCredentials awsCredentials = new BasicAWSCredentials(accessKey, secretKey);
-			awsLogsClient = new AWSLogsClient(awsCredentials);
-			awsLogsClient.setRegion(RegionUtils.getRegion(region));
-			verifyLogGroupExists();
-			verifLogStreamExists();
-
-			lookupInstanceName(awsCredentials);
-			addInfo(getClass().getSimpleName() + " started");
 
 			List<ILoggingEvent> events = new ArrayList<ILoggingEvent>(maxBatchSize);
 			Thread thread = Thread.currentThread();
@@ -269,6 +312,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 						loggingEvent = loggingEventQueue.poll(timeoutMillis, TimeUnit.MILLISECONDS);
 					} catch (InterruptedException ex) {
 						Thread.currentThread().interrupt();
+						// write what we have and bail
 						writeEvents(events);
 						return;
 					}
@@ -304,6 +348,15 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			}
 		}
 
+		private void initialize() {
+			AWSCredentials awsCredentials = new BasicAWSCredentials(accessKey, secretKey);
+			awsLogsClient = new AWSLogsClient(awsCredentials);
+			awsLogsClient.setRegion(RegionUtils.getRegion(region));
+			verifyLogGroupExists();
+			verifyLogStreamExists();
+			lookupInstanceName(awsCredentials);
+		}
+
 		private void verifyLogGroupExists() {
 			DescribeLogGroupsRequest request = new DescribeLogGroupsRequest().withLogGroupNamePrefix(logGroup);
 			sequenceToken = request.getNextToken();
@@ -322,7 +375,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			}
 		}
 
-		private void verifLogStreamExists() {
+		private void verifyLogStreamExists() {
 			DescribeLogStreamsRequest request =
 					new DescribeLogStreamsRequest().withLogGroupName(logGroup).withLogStreamNamePrefix(logStream);
 			DescribeLogStreamsResult result = awsLogsClient.describeLogStreams(request);
@@ -370,6 +423,15 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 				stopMessagesThreadLocal.set(false);
 				if (exception != null) {
 					addError("Exception thrown when creating logging " + events.size() + " events", exception);
+					if (emergencyAppender != null) {
+						try {
+							for (ILoggingEvent event : events) {
+								emergencyAppender.doAppend(event);
+							}
+						} catch (Exception e) {
+							// oh well, we tried
+						}
+					}
 				}
 			}
 		}

@@ -16,10 +16,11 @@
 		<layout class="com.j256.cloudwatchlogbackappender.Ec2PatternLayout">
 			<pattern>[%instance] [%thread] %level %logger{20} - %msg</pattern>
 		</layout>
+		<initialStartupSleepMillis>0</initialStartupSleepMillis>
+		<appender-ref ref="STDOUT" />
 	</appender>
 
 	<root level="INFO">
-		<appender-ref ref="STDOUT" />
 		<appender-ref ref="CLOUDWATCH" />
 	</root>
 

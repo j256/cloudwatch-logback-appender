@@ -1,4 +1,10 @@
+0.3: 3/14/2017
+	* Added support for an emergency log appender in case the remoting fails.
+	* Removed the queue startup delay which wasn't needed
+
 0.2: 3/14/2017
 	* Switched to using a standard pattern layout.
 	* Added Ec2PatternLayout to support EC2 instance-name and instance-id.
+
+0.1: 3/14/2017
 	* Initial public release.
