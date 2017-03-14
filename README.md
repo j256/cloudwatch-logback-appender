@@ -30,6 +30,8 @@ Gray Watson
 
 ## logback.xml Configuration
 
+Minimal logback appender configuration:
+
 ``` xml
 <appender name="CLOUDWATCH" class="com.j256.cloudwatchlogbackappender.CloudWatchAppender">
     <!-- required settings -->
@@ -38,12 +40,57 @@ Gray Watson
     <region>us-east-1</region>
     <logGroup>application-name</logGroup>
     <logStream>general</logStream>
-    <!-- not required settings, default values shown below -->
-    <messagePattern>[{instanceName}] [{threadName}] {level} {loggerName} - {message}</messagePattern>
-    <maxBatchSize>128</maxBatchSize>
-    <maxBatchTimeMillis>5000</maxBatchTimeMillis>
-    <internalQueueSize>8192</internalQueueSize>
-    <createLogDests>true</createLogDests>
-    <logExceptions>true</logExceptions>
 </appender>
+```
+
+Complete list of the appender properties.
+
+| Property | Type | Description |
+| -------- | ---- | ----------- |
+| `accessKey` | *string* | IAM user access key |
+| `secretKey` | *string* | IAM user secret key |
+| `region` | *string* | AWS region |
+| `logGroup` | *string* | Log group name |
+| `logStream` | *string* | Log stream name |
+| `messagePattern` | *string* | **Default: see below**<br/> Pattern of the message written to cloudwatch. |
+| `maxBatchSize` | *integer* | **Default: 128**<br/>Maximum number of log events put to cloudwatch in single request. |
+| `maxBatchTimeMillis` | *integer* | **Default: 5000**<br/>Maximum time in milliseconds to collect log events to submit batch. |
+| `internalQueueSize` | *integer* | **Default: 8192**<br/>Size of the internal log event queue. |
+| `createLogDests` | *boolean* | **Default: true**<br/>Create the CloudWatch log and stream if they don't exist.
+Set to **false** to require fewer IAM policy actions. |
+| `logExceptions` | *boolean* | **Default: true**<br/>Log exceptions to CloudWatch. |
+
+The ```messagePattern``` allows the following replacement token names surrounded by curly braces: 
+
+| Token | Description |
+| -------- | ---- | ----------- |
+| `instance` | Name of the EC2 instance or "unknown" |
+| `thread` | Name of the thread that generated the log event |
+| `level` | Name of the log level of the event |
+| `logger` | Name of the logger which is often the class name |
+| `msg` | Message from the event (with any arguments expanded) |
+
+### Required IAM policy
+
+Policy required to create the log group and stream on demand.
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:DescribeLogGroups",
+        "logs:DescribeLogStreams",
+        "logs:PutLogEvents"
+    ],
+      "Resource": [
+        "arn:aws:logs:*:*:*"
+    ]
+  }
+ ]
+}
 ```
