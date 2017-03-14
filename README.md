@@ -91,7 +91,7 @@ appender to write events to the console or a file by adding the following to you
 This appender will be used if:
 
 * there was some problem configuring the CloudWatch or other AWS APIs
-* the internal queue fills up too fast and messages can't be written remotely fast enough
+* the internal queue fills up and messages can't be written remotely fast enough
 * there was some problem with the actual put events CloudWatch call – maybe transient network failure
 
 ### Required IAM policy
@@ -124,4 +124,5 @@ ec2 instance name it is on.
             ]
         }
     ]
-}```
+}
+```
