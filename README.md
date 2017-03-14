@@ -10,8 +10,8 @@ again...  Sigh.
 The git repository is:
 	https://github.com/j256/cloudwatch-logback-appender
 
-Maven packages are published via the central repo:
-	http://repo1.maven.org/maven2/com/j256/cloudwatch-logback-appender/cloudwatch-logback-appender/
+Maven packages are published via the central repo: <br />
+	http://repo1.maven.org/maven2/com/j256/cloudwatchlogbackappender/cloudwatchlogbackappender/
 
 Enjoy,
 Gray Watson
