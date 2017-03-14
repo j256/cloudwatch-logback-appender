@@ -59,7 +59,13 @@ Complete list of the appender properties.
 | `createLogDests` | *boolean* | **Default: true**<br/>Create the CloudWatch log and stream if they don't exist.  Set to **false** to require fewer IAM policy actions. |
 | `logExceptions` | *boolean* | **Default: true**<br/>Log exceptions to CloudWatch. |
 
-The ```messagePattern``` allows the following replacement token names surrounded by curly braces: 
+The ```messagePattern``` defines the format of the event when posted to CloudWatch.  The default is:
+
+``` text
+[{instance}] [{thread}] {level} {logger} - {msg}
+```
+
+It allows the following replacement token names surrounded by curly braces.  
 
 | Token | Description |
 | -------- | ---- | ----------- |

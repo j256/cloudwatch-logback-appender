@@ -1,0 +1,32 @@
+<configuration>
+
+	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder>
+			<pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{20} - %msg%n</pattern>
+		</encoder>
+	</appender>
+
+	<appender name="CLOUDWATCH" class="com.j256.cloudwatchlogbackappender.CloudWatchAppender">
+		<!-- required settings -->
+		<accessKey>your-iam-user-access-key-goes-here</accessKey>
+		<secretKey>your-iam-user-secret-key-goes-here</secretKey>
+		<region>us-east-1</region>
+		<logGroup>test</logGroup>
+		<logStream>general</logStream>
+		<!-- not required settings, default values shown below -->
+		<messagePattern>[{instance}] [{thread}] {level} {logger} - {msg}</messagePattern>
+		<maxBatchSize>128</maxBatchSize>
+		<maxBatchTimeMillis>5000</maxBatchTimeMillis>
+		<internalQueueSize>8192</internalQueueSize>
+		<createLogDests>true</createLogDests>
+		<logExceptions>true</logExceptions>
+	</appender>
+
+	<root level="INFO">
+		<appender-ref ref="STDOUT" />
+		<appender-ref ref="CLOUDWATCH" />
+	</root>
+
+	<logger name="com.j256" level="DEBUG" />
+
+</configuration>

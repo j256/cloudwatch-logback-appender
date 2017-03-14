@@ -58,12 +58,6 @@
 	</profiles>
 	<build>
 		<finalName>cloudwatch-logback-appender</finalName>
-		<!-- Resources -->
-		<resources>
-			<resource>
-				<directory>src/main/resources</directory>
-			</resource>
-		</resources>
 		<!-- Test Resources -->
 		<testResources>
 			<testResource>

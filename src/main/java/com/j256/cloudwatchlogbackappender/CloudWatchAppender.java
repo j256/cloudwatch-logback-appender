@@ -55,8 +55,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	private static final int DEFAULT_MAX_QUEUE_WAIT_TIME_MILLIS = 100;
 	private static final int INITIAL_LOG_STARTUP_SLEEP_MILLIS = 5000;
 	private static final String EC2_INSTANCE_UNKNOWN = "unknown";
-	private static final String DEFAULT_MESSAGE_PATTERN =
-			"[{instanceName}] [{threadName}] {level} {loggerName} - {message}";
+	private static final String DEFAULT_MESSAGE_PATTERN = "[{instance}] [{thread}] {level} {logger} - {msg}";
 	private static final boolean DEFAULT_LOG_EXCEPTIONS = true;
 
 	private String accessKey;
@@ -137,7 +136,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 
 	@Override
 	protected void append(ILoggingEvent loggingEvent) {
-		if (loggingEventQueue != null) {
+		if (loggingEventQueue == null) {
 			if (!warningMessagePrinted) {
 				System.err.println(getClass().getSimpleName() + " not wired correctly, ignoring all log messages");
 				warningMessagePrinted = true;
@@ -217,7 +216,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	 */
 	private class CloudWatchWriter implements Runnable {
 
-		private String token;
+		private String sequenceToken;
 		private String instanceName;
 		private StringBuilder sb = new StringBuilder(1024);
 		private Map<String, Object> templateMap = new HashMap<String, Object>();
@@ -234,10 +233,8 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			AWSCredentials awsCredentials = new BasicAWSCredentials(accessKey, secretKey);
 			awsLogsClient = new AWSLogsClient(awsCredentials);
 			awsLogsClient.setRegion(RegionUtils.getRegion(region));
-			if (createLogDests) {
-				verifyLogGroupExists();
-				verifLogStreamExists();
-			}
+			verifyLogGroupExists();
+			verifLogStreamExists();
 			instanceName = requestInstanceName(awsCredentials);
 			addInfo(format("{} started", getClass().getSimpleName()));
 
@@ -246,25 +243,26 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			while (!thread.isInterrupted()) {
 				long batchTimeout = System.currentTimeMillis() + maxBatchTimeMillis;
 				while (!thread.isInterrupted()) {
+					long timeoutMillis = batchTimeout - System.currentTimeMillis();
+					if (timeoutMillis < 0) {
+						break;
+					}
+					ILoggingEvent loggingEvent;
 					try {
-						long timeoutMillis = batchTimeout - System.currentTimeMillis();
-						if (timeoutMillis < 0) {
-							break;
-						}
-						ILoggingEvent event = loggingEventQueue.poll(timeoutMillis, TimeUnit.MILLISECONDS);
-						if (event == null) {
-							// wait timed out
-							break;
-						}
-						events.add(event);
-						if (events.size() >= maxBatchSize) {
-							// batch size exceeded
-							break;
-						}
+						loggingEvent = loggingEventQueue.poll(timeoutMillis, TimeUnit.MILLISECONDS);
 					} catch (InterruptedException ex) {
 						Thread.currentThread().interrupt();
 						writeEvents(events);
 						return;
+					}
+					if (loggingEvent == null) {
+						// wait timed out
+						break;
+					}
+					events.add(loggingEvent);
+					if (events.size() >= maxBatchSize) {
+						// batch size exceeded
+						break;
 					}
 				}
 				if (!events.isEmpty()) {
@@ -291,15 +289,20 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 
 		private void verifyLogGroupExists() {
 			DescribeLogGroupsRequest request = new DescribeLogGroupsRequest().withLogGroupNamePrefix(logGroup);
+			sequenceToken = request.getNextToken();
 			DescribeLogGroupsResult result = awsLogsClient.describeLogGroups(request);
 			for (LogGroup group : result.getLogGroups()) {
 				if (logGroup.equals(group.getLogGroupName())) {
 					return;
 				}
 			}
-			CreateLogGroupRequest createRequest = new CreateLogGroupRequest(logGroup);
-			awsLogsClient.createLogGroup(createRequest);
-			addInfo(format("Created log group '%s'", logGroup));
+			if (createLogDests) {
+				CreateLogGroupRequest createRequest = new CreateLogGroupRequest(logGroup);
+				awsLogsClient.createLogGroup(createRequest);
+				addInfo(format("Created log group '%s'", logGroup));
+			} else {
+				addWarn(format("log group '%s' doesn't exist and not created", logGroup));
+			}
 		}
 
 		private void verifLogStreamExists() {
@@ -308,12 +311,17 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			DescribeLogStreamsResult result = awsLogsClient.describeLogStreams(request);
 			for (LogStream stream : result.getLogStreams()) {
 				if (logStream.equals(stream.getLogStreamName())) {
+					sequenceToken = stream.getUploadSequenceToken();
 					return;
 				}
 			}
-			CreateLogStreamRequest createRequest = new CreateLogStreamRequest(logGroup, logStream);
-			awsLogsClient.createLogStream(createRequest);
-			addInfo(format("Created log stream '%s' for group '%s'", logStream, logGroup));
+			if (createLogDests) {
+				CreateLogStreamRequest createRequest = new CreateLogStreamRequest(logGroup, logStream);
+				awsLogsClient.createLogStream(createRequest);
+				addInfo(format("Created log stream '%s' for group '%s'", logStream, logGroup));
+			} else {
+				addWarn(format("log stream '%s' doesn't exist and not created", logStream));
+			}
 		}
 
 		private void writeEvents(List<ILoggingEvent> events) {
@@ -328,17 +336,17 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 					logEvents.add(logEvent);
 				}
 				PutLogEventsRequest request = new PutLogEventsRequest(logGroup, logStream, logEvents);
-				if (token != null) {
-					request = request.withSequenceToken(token);
+				if (sequenceToken != null) {
+					request = request.withSequenceToken(sequenceToken);
 				}
 				PutLogEventsResult result = awsLogsClient.putLogEvents(request);
-				token = result.getNextSequenceToken();
+				sequenceToken = result.getNextSequenceToken();
 			} catch (DataAlreadyAcceptedException daac) {
 				exception = daac;
-				token = daac.getExpectedSequenceToken();
+				sequenceToken = daac.getExpectedSequenceToken();
 			} catch (InvalidSequenceTokenException iste) {
 				exception = iste;
-				token = iste.getExpectedSequenceToken();
+				sequenceToken = iste.getExpectedSequenceToken();
 			} catch (AmazonServiceException ase) {
 				exception = ase;
 			} finally {
@@ -376,11 +384,11 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		private String eventToString(ILoggingEvent loggingEvent) {
 			sb.setLength(0);
 			templateMap.clear();
-			templateMap.put("instanceName", instanceName);
-			templateMap.put("threadName", loggingEvent.getThreadName());
+			templateMap.put("instance", instanceName);
+			templateMap.put("thread", loggingEvent.getThreadName());
 			templateMap.put("level", loggingEvent.getLevel());
-			templateMap.put("loggerName", loggingEvent.getLoggerName());
-			templateMap.put("message", loggingEvent.getFormattedMessage());
+			templateMap.put("logger", loggingEvent.getLoggerName());
+			templateMap.put("msg", loggingEvent.getFormattedMessage());
 			messageTemplate.render(templateMap, sb);
 			// handle any throw information
 			if (logExceptions && loggingEvent.getThrowableProxy() != null) {

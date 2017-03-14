@@ -119,6 +119,15 @@ public class StringTemplate {
 	/**
 	 * Convert and return a new string with the substitutions.
 	 */
+	public String render(Map<String, Object> replacementMap) {
+		StringBuilder sb = new StringBuilder();
+		render(replacementMap, sb);
+		return sb.toString();
+	}
+
+	/**
+	 * Convert the template substitutions and add to the string builder argument.
+	 */
 	public void render(Map<String, Object> replacementMap, StringBuilder sb) {
 		for (TemplatePart templatePart : templateParts) {
 			templatePart.render(sb, replacementMap);
