@@ -23,6 +23,7 @@ Gray Watson
 	<dependency>
 		<groupId>com.j256.cloudwatchlogbackappender</groupId>
 		<artifactId>cloudwatchlogbackappender</artifactId>
+		<!-- NOTE: change the version to the most recent release version from the repo -->
 		<version>0.1</version>
 	</dependency>
 </dependencies>
@@ -71,17 +72,20 @@ It allows the following replacement token names surrounded by curly braces.
 
 | Token | Description |
 | -------- | ----------- |
-| `instance` | Name of the EC2 instance or "unknown" |
+| `instance` | Name of the EC2 instance or "unknown" if not in EC2 or not known |
 | `thread` | Name of the thread that generated the log event |
 | `level` | Name of the log level of the event |
-| `logger` | Name of the logger which is often the class name |
+| `logger` | Name of the logger – often the class name |
 | `msg` | Message from the event (with any arguments expanded) |
 
 ### Required IAM policy
 
-Policy required to create the log group and stream on demand.  The ```logs:CreateLogGroup``` and ```logs:CreateLogStream```
-actions are only required if the appender is creating the log-group and stream itself.  The ```ec2:Describe*``` action
-is only required if you want the appender to query for the ec2 instance name it is on.
+When making any AWS API calls, we typically create a IAM user with specific permissions so if any API keys are stolen,
+the hacker only have limited access to our AWS services.  To get the appender to be able to publish to CloudWatch,
+the following IAM policy is required to create the log group and put log events to CloudWatch.  The
+```logs:CreateLogGroup``` and ```logs:CreateLogStream``` actions are only required if the appender is creating the
+log-group and stream itself.  The ```ec2:Describe*``` action is only required if you want the appender to query for the
+ec2 instance name it is on.
 
 ```json
 {
