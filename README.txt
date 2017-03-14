@@ -1,6 +1,7 @@
-This package provides a logback appender that writes its log events to Cloudwatch.  Before you sat it, there
-seem to be many projects like this out there but I could find none of them that were self-contained and that
-we published to the central Maven repo.  So here we go reinventing the wheel again...
+This package provides a logback appender that writes its log events to Cloudwatch.  Before you say it,
+there seem to be many projects like this out there but I could find none of them that were
+self-contained and that we published to the central Maven repo.  So here we go reinventing the wheel
+again...  Sigh.
 
 The git repository is:
 	https://github.com/j256/cloudwatch-logback-appender
