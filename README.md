@@ -34,12 +34,12 @@ Minimal logback appender configuration:
 
 ``` xml
 <appender name="CLOUDWATCH" class="com.j256.cloudwatchlogbackappender.CloudWatchAppender">
-    <!-- required settings -->
-    <accessKey>XXXXXX</accessKey>
-    <secretKey>YYYYYY</secretKey>
-    <region>us-east-1</region>
-    <logGroup>application-name</logGroup>
-    <logStream>general</logStream>
+	<!-- required settings -->
+	<accessKey>XXXXXX</accessKey>
+	<secretKey>YYYYYY</secretKey>
+	<region>us-east-1</region>
+	<logGroup>application-name</logGroup>
+	<logStream>general</logStream>
 </appender>
 ```
 
@@ -56,8 +56,7 @@ Complete list of the appender properties.
 | `maxBatchSize` | *integer* | **Default: 128**<br/>Maximum number of log events put to cloudwatch in single request. |
 | `maxBatchTimeMillis` | *integer* | **Default: 5000**<br/>Maximum time in milliseconds to collect log events to submit batch. |
 | `internalQueueSize` | *integer* | **Default: 8192**<br/>Size of the internal log event queue. |
-| `createLogDests` | *boolean* | **Default: true**<br/>Create the CloudWatch log and stream if they don't exist.
-Set to **false** to require fewer IAM policy actions. |
+| `createLogDests` | *boolean* | **Default: true**<br/>Create the CloudWatch log and stream if they don't exist.  Set to **false** to require fewer IAM policy actions. |
 | `logExceptions` | *boolean* | **Default: true**<br/>Log exceptions to CloudWatch. |
 
 The ```messagePattern``` allows the following replacement token names surrounded by curly braces: 
@@ -76,21 +75,21 @@ Policy required to create the log group and stream on demand.
 
 ```json
 {
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "logs:CreateLogGroup",
-        "logs:CreateLogStream",
-        "logs:DescribeLogGroups",
-        "logs:DescribeLogStreams",
-        "logs:PutLogEvents"
-    ],
-      "Resource": [
-        "arn:aws:logs:*:*:*"
-    ]
-  }
- ]
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Effect": "Allow",
+			"Action": [
+				"logs:CreateLogGroup",
+				"logs:CreateLogStream",
+				"logs:DescribeLogGroups",
+				"logs:DescribeLogStreams",
+				"logs:PutLogEvents"
+			],
+			"Resource": [
+				"arn:aws:logs:*:*:*"
+			]
+		}
+	]
 }
 ```
