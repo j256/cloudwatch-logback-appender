@@ -117,14 +117,15 @@ if you want the appender to query for the ec2 instance name it is on – see ```
                 "logs:DescribeLogGroups",
                 "logs:DescribeLogStreams",
                 "logs:PutLogEvents",
-                "ec2:DescribeInstances",
                 "ec2:DescribeTags"
             ],
             "Resource": [
-                "arn:aws:logs:*:*:*",
-                "arn:aws:ec2:*"
+                "*"
             ]
         }
     ]
 }
 ```
+
+Couldn't figure out how to restrict to all ec2 instances.  If you are only doing log requests then
+you can limit to the resource ```arn:aws:logs:*:*:*"```.
