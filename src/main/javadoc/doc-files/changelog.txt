@@ -1,3 +1,6 @@
+0.4: 3/15/2017
+	* Moved the initialization of the AWS log client to later to stop log recursion.
+
 0.3: 3/14/2017
 	* Added support for an emergency log appender in case the remoting fails.
 	* Removed the queue startup delay which wasn't needed

@@ -117,7 +117,8 @@ if you want the appender to query for the ec2 instance name it is on – see ```
                 "logs:DescribeLogGroups",
                 "logs:DescribeLogStreams",
                 "logs:PutLogEvents",
-                "ec2:Describe*"
+                "ec2:DescribeInstances",
+                "ec2:DescribeTags"
             ],
             "Resource": [
                 "arn:aws:logs:*:*:*",

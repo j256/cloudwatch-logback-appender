@@ -289,15 +289,6 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		@Override
 		public void run() {
 
-			try {
-				stopMessagesThreadLocal.set(true);
-				initialize();
-			} catch (Exception e) {
-				addError("Problems initializing cloudwatch writer", e);
-			} finally {
-				stopMessagesThreadLocal.set(false);
-			}
-
 			List<ILoggingEvent> events = new ArrayList<ILoggingEvent>(maxBatchSize);
 			Thread thread = Thread.currentThread();
 			while (!thread.isInterrupted()) {
@@ -348,6 +339,60 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			}
 		}
 
+		private void writeEvents(List<ILoggingEvent> events) {
+		
+			if (awsLogsClient == null) {
+				try {
+					stopMessagesThreadLocal.set(true);
+					initialize();
+				} catch (Exception e) {
+					addError("Problems initializing cloudwatch writer", e);
+				} finally {
+					stopMessagesThreadLocal.set(false);
+				}
+			}
+		
+			// we need this in case our RPC calls create log output which we don't want to then log again
+			stopMessagesThreadLocal.set(true);
+			Exception exception = null;
+			try {
+				List<InputLogEvent> logEvents = new ArrayList<InputLogEvent>(events.size());
+				for (ILoggingEvent event : events) {
+					InputLogEvent logEvent =
+							new InputLogEvent().withTimestamp(event.getTimeStamp()).withMessage(eventToString(event));
+					logEvents.add(logEvent);
+				}
+		
+				PutLogEventsRequest request =
+						new PutLogEventsRequest(logGroup, logStream, logEvents).withSequenceToken(sequenceToken);
+				PutLogEventsResult result = awsLogsClient.putLogEvents(request);
+				sequenceToken = result.getNextSequenceToken();
+			} catch (DataAlreadyAcceptedException daac) {
+				exception = daac;
+				sequenceToken = daac.getExpectedSequenceToken();
+			} catch (InvalidSequenceTokenException iste) {
+				exception = iste;
+				sequenceToken = iste.getExpectedSequenceToken();
+			} catch (Exception e) {
+				// catch everything else to make sure we don't quit the thread
+				exception = e;
+			} finally {
+				stopMessagesThreadLocal.set(false);
+				if (exception != null) {
+					addError("Exception thrown when creating logging " + events.size() + " events", exception);
+					if (emergencyAppender != null) {
+						try {
+							for (ILoggingEvent event : events) {
+								emergencyAppender.doAppend(event);
+							}
+						} catch (Exception e) {
+							// oh well, we tried
+						}
+					}
+				}
+			}
+		}
+
 		private void initialize() {
 			AWSCredentials awsCredentials = new BasicAWSCredentials(accessKey, secretKey);
 			awsLogsClient = new AWSLogsClient(awsCredentials);
@@ -391,48 +436,6 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 				addInfo("Created log-stream '" + logStream + "' for group '" + logGroup + "'");
 			} else {
 				addWarn("Log-stream '" + logStream + "' doesn't exist and not created");
-			}
-		}
-
-		private void writeEvents(List<ILoggingEvent> events) {
-			// we need this in case our RPC calls create log output which we don't want to then log again
-			stopMessagesThreadLocal.set(true);
-			Exception exception = null;
-			try {
-				List<InputLogEvent> logEvents = new ArrayList<InputLogEvent>(events.size());
-				for (ILoggingEvent event : events) {
-					InputLogEvent logEvent =
-							new InputLogEvent().withTimestamp(event.getTimeStamp()).withMessage(eventToString(event));
-					logEvents.add(logEvent);
-				}
-
-				PutLogEventsRequest request =
-						new PutLogEventsRequest(logGroup, logStream, logEvents).withSequenceToken(sequenceToken);
-				PutLogEventsResult result = awsLogsClient.putLogEvents(request);
-				sequenceToken = result.getNextSequenceToken();
-			} catch (DataAlreadyAcceptedException daac) {
-				exception = daac;
-				sequenceToken = daac.getExpectedSequenceToken();
-			} catch (InvalidSequenceTokenException iste) {
-				exception = iste;
-				sequenceToken = iste.getExpectedSequenceToken();
-			} catch (Exception e) {
-				// catch everything else to make sure we don't quit the thread
-				exception = e;
-			} finally {
-				stopMessagesThreadLocal.set(false);
-				if (exception != null) {
-					addError("Exception thrown when creating logging " + events.size() + " events", exception);
-					if (emergencyAppender != null) {
-						try {
-							for (ILoggingEvent event : events) {
-								emergencyAppender.doAppend(event);
-							}
-						} catch (Exception e) {
-							// oh well, we tried
-						}
-					}
-				}
 			}
 		}
 
