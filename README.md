@@ -88,7 +88,7 @@ This appender will be used if:
 
 * there was some problem configuring the CloudWatch or other AWS APIs
 * the internal queue fills up and messages can't be written remotely fast enough
-* there was some problem with the actual put events CloudWatch call – maybe transient network failure
+* there was some problem with the actual put events CloudWatch call – maybe a transient network failure
 
 If no emergency appender is configured and a problem does happen then the log messages will be not be persisted.
 
