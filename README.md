@@ -100,7 +100,7 @@ the hacker only have limited access to our AWS services.  To get the appender to
 the following IAM policy is required to create the log group and put log events to CloudWatch.
 
 The ```logs:CreateLogGroup``` and ```logs:CreateLogStream``` actions are only required if the appender is creating the
-log-group and stream itself (see ```createLogDests``` option above).  The ```ec2:Describe*``` action is only required
+log-group and stream itself (see ```createLogDests``` option above).  The ```ec2:DescribeTags``` action is only required
 if you want the appender to query for the ec2 instance name it is on – see ```Ec2PatternLayout``` above.
 
 ```json
