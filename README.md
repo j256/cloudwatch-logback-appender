@@ -129,4 +129,4 @@ you can limit to the resource ```arn:aws:logs:*:*:*"```.
 
 == ChangeLog Release Notes ==
 
-See the [ChangeLog.txt file[(blob/master/src/main/javadoc/doc-files/changelog.txt).
+See the [ChangeLog.txt file](blob/master/src/main/javadoc/doc-files/changelog.txt).
