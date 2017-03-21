@@ -21,7 +21,7 @@ Gray Watson
 		<groupId>com.j256.cloudwatchlogbackappender</groupId>
 		<artifactId>cloudwatchlogbackappender</artifactId>
 		<!-- NOTE: change the version to the most recent release version from the repo -->
-		<version>0.3</version>
+		<version>1.0</version>
 	</dependency>
 </dependencies>
 ```
