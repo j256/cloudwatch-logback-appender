@@ -39,19 +39,19 @@ Minimal logback appender configuration:
 	<logStream>your-log-stream-name-here</logStream>
 	<layout>
 		<!-- possible layout pattern -->
-		<pattern>[%thread] %level %logger{20} - %msg</pattern>
+		<pattern>[%thread] %level %logger{20} - %msg%n%xThrowable</pattern>
 	</layout>
 </appender>
 ```
 
-You may want to use our ```Ec2PatternLayout``` class which adds support for %instance, %instanceName, and %in which is replaced
-with the ec2 instance-name tag.  It also supports %instanceId and %iid for the instance-id as well.
+You may want to use our ```Ec2PatternLayout``` class which adds support for the ec2 instance-name tag from the tokens
+%instance, %instanceName, and %in.  It also supports %instanceId and %iid for the instance-id as well.
 
 ``` xml
 <appender name="CLOUDWATCH" class="com.j256.cloudwatchlogbackappender.CloudWatchAppender">
 	...
 	<layout class="com.j256.cloudwatchlogbackappender.Ec2PatternLayout">
-		<pattern>[%instance] [%thread] %level %logger{20} - %msg</pattern>
+		<pattern>[%instance] [%thread] %level %logger{20} - %msg%n%xThrowable</pattern>
 	</layout>
 ```
 
@@ -71,7 +71,6 @@ Here is the complete list of the appender properties.
 | `maxQueueWaitTimeMillis` | *integer* | **Default: 100**<br/>Maximum time in milliseconds to wait if internal queue is full before using the emergency appender (see below). |
 | `internalQueueSize` | *integer* | **Default: 8192**<br/>Size of the internal log event queue. |
 | `createLogDests` | *boolean* | **Default: true**<br/>Create the CloudWatch log and stream if they don't exist. |
-| `logExceptions` | *boolean* | **Default: true**<br/>Write exceptions to CloudWatch as log events. |
 
 ### Emergency Appender
 

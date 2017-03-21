@@ -1,3 +1,7 @@
+1.0: 3/21/2017
+	* Removed extraneous exception handling since the layout does it for us.
+	* Fixed some of the emergency appender stop/stop logic.
+
 0.4: 3/15/2017
 	* Moved the initialization of the AWS log client to later to stop log recursion.
 

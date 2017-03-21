@@ -8,13 +8,14 @@
 
 	<appender name="CLOUDWATCH" class="com.j256.cloudwatchlogbackappender.CloudWatchAppender">
 		<!-- required settings -->
-		<accessKey>your-iam-user-access-key-goes-here</accessKey>
-		<secretKey>your-iam-user-secret-key-goes-here</secretKey>
+		<accessKey>AKIAJPX373MEXB7AGIFA</accessKey>
+		<secretKey>gEQ0w72vzAgwTCilNSiG427HMK7xM2bAH/6zsIk8</secretKey>
 		<region>us-east-1</region>
 		<logGroup>test</logGroup>
 		<logStream>general</logStream>
 		<layout class="com.j256.cloudwatchlogbackappender.Ec2PatternLayout">
-			<pattern>[%instance] [%thread] %level %logger{20} - %msg</pattern>
+			<!-- note: the %n is necessary to separate from any exceptions -->
+			<pattern>[%instance] [%thread] %level %logger{20} - %msg%n%xThrowable</pattern>
 		</layout>
 		<initialStartupSleepMillis>0</initialStartupSleepMillis>
 		<appender-ref ref="STDOUT" />

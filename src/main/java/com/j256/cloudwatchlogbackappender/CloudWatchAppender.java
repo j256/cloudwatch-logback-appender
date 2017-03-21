@@ -34,8 +34,6 @@ import com.amazonaws.services.logs.model.PutLogEventsResult;
 import com.amazonaws.util.EC2MetadataUtils;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.classic.spi.IThrowableProxy;
-import ch.qos.logback.classic.spi.StackTraceElementProxy;
 import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.Layout;
 import ch.qos.logback.core.UnsynchronizedAppenderBase;
@@ -59,7 +57,6 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	private static final boolean DEFAULT_CREATE_LOG_DESTS = true;
 	/** max time to wait in millis before dropping a log event on the floor */
 	private static final long DEFAULT_MAX_QUEUE_WAIT_TIME_MILLIS = 100;
-	private static final boolean DEFAULT_LOG_EXCEPTIONS = true;
 
 	private String accessKey;
 	private String secretKey;
@@ -73,7 +70,6 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	private long maxQueueWaitTimeMillis = DEFAULT_MAX_QUEUE_WAIT_TIME_MILLIS;
 	private int internalQueueSize = DEFAULT_INTERNAL_QUEUE_SIZE;
 	private boolean createLogDests = DEFAULT_CREATE_LOG_DESTS;
-	private boolean logExceptions = DEFAULT_LOG_EXCEPTIONS;
 
 	private AWSLogsClient awsLogsClient;
 
@@ -91,6 +87,9 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	 */
 	@Override
 	public void start() {
+		if (started) {
+			return;
+		}
 		/*
 		 * NOTE: as we startup here, we can't make any log calls so we can't make any RPC calls or anything without
 		 * going recursive.
@@ -118,11 +117,17 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		cloudWatchWriterThread.setDaemon(true);
 		cloudWatchWriterThread.start();
 
+		if (!emergencyAppender.isStarted()) {
+			emergencyAppender.start();
+		}
 		super.start();
 	}
 
 	@Override
 	public void stop() {
+		if (!started) {
+			return;
+		}
 		super.stop();
 
 		cloudWatchWriterThread.interrupt();
@@ -219,18 +224,14 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		this.createLogDests = createLogDests;
 	}
 
-	// not-required, default is DEFAULT_LOG_EXCEPTIONS
-	public void setLogExceptions(boolean logExceptions) {
-		this.logExceptions = logExceptions;
-	}
-
 	@Override
 	public void addAppender(Appender<ILoggingEvent> appender) {
-		if (emergencyAppender != null) {
-			emergencyAppender.stop();
+		if (emergencyAppender == null) {
+			emergencyAppender = appender;
+		} else {
+			addWarn("One and only one appender may be attached to " + getClass().getSimpleName());
+			addWarn("Ignoring additional appender named [" + appender.getName() + "]");
 		}
-		emergencyAppender = appender;
-		appender.start();
 	}
 
 	@Override
@@ -284,7 +285,6 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	private class CloudWatchWriter implements Runnable {
 
 		private String sequenceToken;
-		private final StringBuilder sb = new StringBuilder(1024);
 
 		@Override
 		public void run() {
@@ -340,7 +340,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		}
 
 		private void writeEvents(List<ILoggingEvent> events) {
-		
+
 			if (awsLogsClient == null) {
 				try {
 					stopMessagesThreadLocal.set(true);
@@ -351,18 +351,19 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 					stopMessagesThreadLocal.set(false);
 				}
 			}
-		
+
 			// we need this in case our RPC calls create log output which we don't want to then log again
 			stopMessagesThreadLocal.set(true);
 			Exception exception = null;
 			try {
 				List<InputLogEvent> logEvents = new ArrayList<InputLogEvent>(events.size());
 				for (ILoggingEvent event : events) {
+					String message = layout.doLayout(event);
 					InputLogEvent logEvent =
-							new InputLogEvent().withTimestamp(event.getTimeStamp()).withMessage(eventToString(event));
+							new InputLogEvent().withTimestamp(event.getTimeStamp()).withMessage(message);
 					logEvents.add(logEvent);
 				}
-		
+
 				PutLogEventsRequest request =
 						new PutLogEventsRequest(logGroup, logStream, logEvents).withSequenceToken(sequenceToken);
 				PutLogEventsResult result = awsLogsClient.putLogEvents(request);
@@ -464,30 +465,6 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			}
 			// if we can't lookup the instance name then set is as the instance-id
 			Ec2InstanceNameConverter.setInstanceName(instanceId);
-		}
-
-		private String eventToString(ILoggingEvent loggingEvent) {
-			sb.setLength(0);
-			sb.append(layout.doLayout(loggingEvent));
-			// handle any throw information
-			if (logExceptions && loggingEvent.getThrowableProxy() != null) {
-				sb.append('\n');
-				boolean first = true;
-				sb.setLength(0);
-				for (IThrowableProxy throwable = loggingEvent.getThrowableProxy(); throwable != null; throwable =
-						throwable.getCause()) {
-					if (first) {
-						first = false;
-					} else {
-						sb.append("Caused by: ");
-					}
-					sb.append(throwable.getClassName()).append(": ").append(throwable.getMessage()).append("\n");
-					for (StackTraceElementProxy proxy : throwable.getStackTraceElementProxyArray()) {
-						sb.append("     ").append(proxy.getSTEAsString()).append("\n");
-					}
-				}
-			}
-			return sb.toString();
 		}
 	}
 }
