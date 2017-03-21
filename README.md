@@ -39,7 +39,7 @@ Minimal logback appender configuration:
 	<logStream>your-log-stream-name-here</logStream>
 	<layout>
 		<!-- possible layout pattern -->
-		<pattern>\[%thread\] %level %logger{20} - %msg%n%xThrowable</pattern>
+		<pattern>[%thread] %level %logger{20} - %msg%n%xThrowable</pattern>
 	</layout>
 </appender>
 ```
@@ -51,7 +51,7 @@ You may want to use our ```Ec2PatternLayout``` class which adds support for the 
 <appender name="CLOUDWATCH" class="com.j256.cloudwatchlogbackappender.CloudWatchAppender">
 	...
 	<layout class="com.j256.cloudwatchlogbackappender.Ec2PatternLayout">
-		<pattern>\[%instance\] \[%thread\] %level %logger{20} - %msg%n%xThrowable</pattern>
+		<pattern>[%instance] [%thread] %level %logger{20} - %msg%n%xThrowable</pattern>
 	</layout>
 ```
 
