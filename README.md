@@ -6,11 +6,9 @@ This package provides a logback appender that writes its log events to Cloudwatc
 there seem to be many projects like this out there but I could find none of them that were
 self-contained and that were published to the central Maven repo.
 
-The git repository is:
-	https://github.com/j256/cloudwatch-logback-appender
+Code available from the [git repository](https://github.com/j256/cloudwatch-logback-appender).
 
-Maven packages are published via the central repo: <br />
-	http://repo1.maven.org/maven2/com/j256/cloudwatchlogbackappender/cloudwatchlogbackappender/
+Maven packages are published via the [maven central repo](http://repo1.maven.org/maven2/com/j256/cloudwatchlogbackappender/cloudwatchlogbackappender/).	
 
 Enjoy,
 Gray Watson
