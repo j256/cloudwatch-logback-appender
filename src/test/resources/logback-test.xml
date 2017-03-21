@@ -8,8 +8,8 @@
 
 	<appender name="CLOUDWATCH" class="com.j256.cloudwatchlogbackappender.CloudWatchAppender">
 		<!-- required settings -->
-		<accessKey>AKIAJPX373MEXB7AGIFA</accessKey>
-		<secretKey>gEQ0w72vzAgwTCilNSiG427HMK7xM2bAH/6zsIk8</secretKey>
+		<accessKey>your-iam-user-access-key-goes-here</accessKey>
+		<secretKey>your-iam-user-secret-key-goes-here</secretKey>
 		<region>us-east-1</region>
 		<logGroup>test</logGroup>
 		<logStream>general</logStream>
