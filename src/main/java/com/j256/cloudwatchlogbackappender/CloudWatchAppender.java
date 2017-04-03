@@ -95,12 +95,6 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		 * NOTE: as we startup here, we can't make any log calls so we can't make any RPC calls or anything without
 		 * going recursive.
 		 */
-		if (MiscUtils.isBlank(accessKey)) {
-			throw new IllegalStateException("Access-key not set or invalid for appender");
-		}
-		if (MiscUtils.isBlank(secretKey)) {
-			throw new IllegalStateException("Secret-key not set or invalid for appender");
-		}
 		if (MiscUtils.isBlank(region)) {
 			throw new IllegalStateException("Region not set or invalid for appender: " + region);
 		}
