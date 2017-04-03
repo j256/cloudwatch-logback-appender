@@ -43,7 +43,7 @@ Minimal logback appender configuration:
 ```
 
 You may want to use our ```Ec2PatternLayout``` class which adds support for the ec2 instance-name tag from the tokens
-%instance, %instanceName, and %in.  It also supports %instanceId and %iid for the instance-id as well.
+```%instance```, ```%instanceName```, and ```%in```.  It also supports ```%instanceId``` and ```%iid``` for the instance-id as well.
 
 ``` xml
 <appender name="CLOUDWATCH" class="com.j256.cloudwatchlogbackappender.CloudWatchAppender">
@@ -93,8 +93,8 @@ If no emergency appender is configured and a problem does happen then the log me
 ### AWS Permissions
 
 You can specify the AWS CloudWatch permissions in a number of ways.  If you use the ```accessKey``` and ```secretKey```
-settings in the config file then the appender will use those credentials directly.  If they are not specified then the
-appender will use the ```DefaultAWSCredentialsProviderChain``` which looks the access and secret keys in:
+settings in the ```logback.xml``` file then the appender will use those credentials directly.  If they are not specified
+then the appender will use the ```DefaultAWSCredentialsProviderChain``` which looks the access and secret keys in:
 
 * Environment Variables – ```AWS_ACCESS_KEY_ID``` and ```AWS_SECRET_ACCESS_KEY``` or ```AWS_ACCESS_KEY``` and ```AWS_SECRET_KEY```
 * Java System Properties – ```aws.accessKeyId``` and ```aws.secretKey```
