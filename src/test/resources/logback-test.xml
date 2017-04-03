@@ -14,7 +14,7 @@
 			<!-- note: the %n is necessary to separate from any exceptions -->
 			<pattern>[%instance] [%thread] %level %logger{20} - %msg%n%xThrowable</pattern>
 		</layout>
-		<initialStartupSleepMillis>0</initialStartupSleepMillis>
+		<initialStartupSleepMillis>3000</initialStartupSleepMillis>
 		<appender-ref ref="STDOUT" />
 	</appender>
 
