@@ -1,3 +1,6 @@
+1.1: 4/3/2017
+	* Added support for the DefaultAWSCredentialsProviderChain.  Thanks to efenderbosch.
+
 1.0: 3/21/2017
 	* Removed extraneous exception handling since the layout does it for us.
 	* Fixed some of the emergency appender stop/stop logic.
