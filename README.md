@@ -59,8 +59,8 @@ Here is the complete list of the appender properties.
 
 | Property | Type | Description |
 | -------- | ---- | ----------- |
-| `accessKey` | *string* | **Default: use ```DefaultAWSCredentialsProviderChain```*** <br /> AWS API access key, see IAM policy details below |
-| `secretKey` | *string* | **Default: use ```DefaultAWSCredentialsProviderChain```*** <br /> AWS API secret key, see IAM policy details below |
+| `accessKey` | *string* | **Default: none, code will use ```DefaultAWSCredentialsProviderChain```** <br /> AWS API access key, see IAM policy details below |
+| `secretKey` | *string* | **Default: none, code will use ```DefaultAWSCredentialsProviderChain```** <br /> AWS API secret key, see IAM policy details below |
 | `region` | *string* | AWS region needed by CloudWatch API |
 | `logGroup` | *string* | Log group name |
 | `logStream` | *string* | Log stream name |
@@ -98,7 +98,7 @@ appender will use the ```DefaultAWSCredentialsProviderChain``` which looks the a
 
 * Environment Variables – ```AWS_ACCESS_KEY_ID``` and ```AWS_SECRET_ACCESS_KEY``` or ```AWS_ACCESS_KEY``` and ```AWS_SECRET_KEY```
 * Java System Properties – ```aws.accessKeyId``` and ```aws.secretKey```
-* Credential profiles file at the default location (~/.aws/credentials) shared by all AWS SDKs and the AWS CLI
+* Credential file at the default location (~/.aws/credentials) shared by all AWS SDKs and the AWS CLI
 * Instance profile credentials delivered through the Amazon EC2 metadata service
 
 When making any AWS API calls, we typically create a IAM user with specific permissions so if any API keys are stolen,
@@ -131,8 +131,8 @@ if you want the appender to query for the ec2 instance name it is on – see ```
 }
 ```
 
-Couldn't figure out how to restrict to all ec2 instances.  If you are only doing log requests then
-you can limit to the resource ```arn:aws:logs:*:*:*"```.
+I couldn't figure out how to restrict to all ec2 instances.  If you are only doing log requests then
+you should be able to limit it to the resource ```arn:aws:logs:*:*:*"```.
 
 ## ChangeLog Release Notes
 
