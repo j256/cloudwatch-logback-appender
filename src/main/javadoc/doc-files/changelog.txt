@@ -1,3 +1,6 @@
+1.2: 4/5/2017
+	* Better handling of initialization errors and other internal log messages.
+
 1.1: 4/3/2017
 	* Added support for the DefaultAWSCredentialsProviderChain.  Thanks to efenderbosch.
 

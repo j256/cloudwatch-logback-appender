@@ -96,8 +96,8 @@ You can specify the AWS CloudWatch permissions in a number of ways.  If you use 
 settings in the ```logback.xml``` file then the appender will use those credentials directly.  If they are not specified
 then the appender will use the ```DefaultAWSCredentialsProviderChain``` which looks the access and secret keys in:
 
-* Environment Variables – ```AWS_ACCESS_KEY_ID``` and ```AWS_SECRET_ACCESS_KEY``` or ```AWS_ACCESS_KEY``` and ```AWS_SECRET_KEY```
-* Java System Properties – ```aws.accessKeyId``` and ```aws.secretKey```
+* Environment Variables: ```AWS_ACCESS_KEY_ID``` and ```AWS_SECRET_ACCESS_KEY``` or ```AWS_ACCESS_KEY``` and ```AWS_SECRET_KEY```
+* Java System Properties: ```aws.accessKeyId``` and ```aws.secretKey```
 * Credential file at the default location (```~/.aws/credentials```) shared by all AWS SDKs and the AWS CLI
 * Instance profile credentials delivered through the Amazon EC2 metadata service
 

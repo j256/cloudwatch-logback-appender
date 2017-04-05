@@ -34,7 +34,10 @@ import com.amazonaws.services.logs.model.PutLogEventsRequest;
 import com.amazonaws.services.logs.model.PutLogEventsResult;
 import com.amazonaws.util.EC2MetadataUtils;
 
+import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.classic.spi.LoggingEvent;
+import ch.qos.logback.classic.spi.ThrowableProxy;
 import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.Layout;
 import ch.qos.logback.core.UnsynchronizedAppenderBase;
@@ -280,6 +283,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	private class CloudWatchWriter implements Runnable {
 
 		private String sequenceToken;
+		private boolean initialized;
 
 		@Override
 		public void run() {
@@ -336,15 +340,26 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 
 		private void writeEvents(List<ILoggingEvent> events) {
 
-			if (awsLogsClient == null) {
+			if (!initialized) {
+				initialized = true;
+				Exception exception = null;
 				try {
 					stopMessagesThreadLocal.set(true);
 					initialize();
 				} catch (Exception e) {
-					addError("Problems initializing cloudwatch writer", e);
+					exception = e;
 				} finally {
 					stopMessagesThreadLocal.set(false);
 				}
+				if (exception != null) {
+					logError("Problems initializing cloudwatch writer", exception);
+				}
+			}
+
+			// if we didn't get an aws logs-client then just write to the emergency appender (if any)
+			if (awsLogsClient == null) {
+				appendToEmergencyAppender(events);
+				return;
 			}
 
 			// we need this in case our RPC calls create log output which we don't want to then log again
@@ -375,16 +390,20 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			} finally {
 				stopMessagesThreadLocal.set(false);
 				if (exception != null) {
-					addError("Exception thrown when creating logging " + events.size() + " events", exception);
-					if (emergencyAppender != null) {
-						try {
-							for (ILoggingEvent event : events) {
-								emergencyAppender.doAppend(event);
-							}
-						} catch (Exception e) {
-							// oh well, we tried
-						}
+					logError("Exception thrown when creating logging " + events.size() + " events", exception);
+					appendToEmergencyAppender(events);
+				}
+			}
+		}
+
+		private void appendToEmergencyAppender(List<ILoggingEvent> events) {
+			if (emergencyAppender != null) {
+				try {
+					for (ILoggingEvent event : events) {
+						emergencyAppender.doAppend(event);
 					}
+				} catch (Exception e) {
+					// oh well, we tried
 				}
 			}
 		}
@@ -415,9 +434,9 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			if (createLogDests) {
 				CreateLogGroupRequest createRequest = new CreateLogGroupRequest(logGroup);
 				awsLogsClient.createLogGroup(createRequest);
-				addInfo("Created log-group '" + logGroup + "'");
+				logInfo("Created log-group '" + logGroup + "'");
 			} else {
-				addWarn("Log-group '" + logGroup + "' doesn't exist and not created");
+				logWarn("Log-group '" + logGroup + "' doesn't exist and not created", null);
 			}
 		}
 
@@ -434,9 +453,9 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			if (createLogDests) {
 				CreateLogStreamRequest createRequest = new CreateLogStreamRequest(logGroup, logStream);
 				awsLogsClient.createLogStream(createRequest);
-				addInfo("Created log-stream '" + logStream + "' for group '" + logGroup + "'");
+				logInfo("Created log-stream '" + logStream + "' for group '" + logGroup + "'");
 			} else {
-				addWarn("Log-stream '" + logStream + "' doesn't exist and not created");
+				logWarn("Log-stream '" + logStream + "' doesn't exist and not created", null);
 			}
 		}
 
@@ -459,12 +478,36 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 						return;
 					}
 				}
-				addInfo("Could not find EC2 instance name in tags: " + tags);
+				logInfo("Could not find EC2 instance name in tags: " + tags);
 			} catch (AmazonServiceException ase) {
-				addInfo("Looking up EC2 instance-name threw: " + ase);
+				logWarn("Looking up EC2 instance-name threw", ase);
 			}
 			// if we can't lookup the instance name then set is as the instance-id
 			Ec2InstanceNameConverter.setInstanceName(instanceId);
+		}
+
+		private void logInfo(String message) {
+			appendEvent(Level.INFO, message, null);
+		}
+
+		private void logWarn(String message, Throwable th) {
+			appendEvent(Level.WARN, message, th);
+		}
+
+		private void logError(String message, Throwable th) {
+			appendEvent(Level.ERROR, message, th);
+		}
+
+		private void appendEvent(Level level, String message, Throwable th) {
+			LoggingEvent event = new LoggingEvent();
+			event.setLoggerName(CloudWatchAppender.class.getName());
+			event.setLevel(level);
+			event.setMessage(message);
+			event.setTimeStamp(System.currentTimeMillis());
+			if (th != null) {
+				event.setThrowableProxy(new ThrowableProxy(th));
+			}
+			append(event);
 		}
 	}
 }
