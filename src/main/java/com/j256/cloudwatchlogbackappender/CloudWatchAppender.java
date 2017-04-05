@@ -156,6 +156,10 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		Boolean stopped = stopMessagesThreadLocal.get();
 		if (stopped == null || !stopped) {
 			try {
+				if (loggingEvent instanceof LoggingEvent) {
+					// we need to do this so that the right thread gets set in the event
+					((LoggingEvent) loggingEvent).setThreadName(Thread.currentThread().getName());
+				}
 				if (!loggingEventQueue.offer(loggingEvent, maxQueueWaitTimeMillis, TimeUnit.MILLISECONDS)) {
 					if (emergencyAppender != null) {
 						emergencyAppender.doAppend(loggingEvent);
