@@ -59,11 +59,11 @@ Here is the complete list of the appender properties.
 
 | Property | Type | Description |
 | -------- | ---- | ----------- |
-| `accessKey` | *string* | **Default: none, code will use ```DefaultAWSCredentialsProviderChain```** <br /> AWS API access key, see IAM policy details below |
-| `secretKey` | *string* | **Default: none, code will use ```DefaultAWSCredentialsProviderChain```** <br /> AWS API secret key, see IAM policy details below |
 | `region` | *string* | AWS region needed by CloudWatch API |
 | `logGroup` | *string* | Log group name |
 | `logStream` | *string* | Log stream name |
+| `accessKey` | *string* | **Default: none, code will use ```DefaultAWSCredentialsProviderChain```** <br /> AWS API access key, see IAM policy details below |
+| `secretKey` | *string* | **Default: none, code will use ```DefaultAWSCredentialsProviderChain```** <br /> AWS API secret key, see IAM policy details below |
 | `maxBatchSize` | *integer* | **Default: 128**<br/>Maximum number of log events put into CloudWatch in single request. |
 | `maxBatchTimeMillis` | *integer* | **Default: 5000**<br/>Maximum time in milliseconds to collect log events to submit batch. |
 | `maxQueueWaitTimeMillis` | *integer* | **Default: 100**<br/>Maximum time in milliseconds to wait if internal queue is full before using the emergency appender (see below). |
