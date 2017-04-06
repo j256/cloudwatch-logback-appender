@@ -64,10 +64,11 @@ Here is the complete list of the appender properties.
 | `logStream` | *string* | Log stream name |
 | `accessKey` | *string* | **Default: none, code will use ```DefaultAWSCredentialsProviderChain```** <br /> AWS API access key, see AWS Permissions below |
 | `secretKey` | *string* | **Default: none, code will use ```DefaultAWSCredentialsProviderChain```** <br /> AWS API secret key, see AWS Permissions below |
-| `maxBatchSize` | *integer* | **Default: 128**<br/>Maximum number of log events put into CloudWatch in single request. |
-| `maxBatchTimeMillis` | *integer* | **Default: 5000**<br/>Maximum time in milliseconds to collect log events to submit batch. |
-| `maxQueueWaitTimeMillis` | *integer* | **Default: 100**<br/>Maximum time in milliseconds to wait if internal queue is full before using the emergency appender (see below). |
-| `internalQueueSize` | *integer* | **Default: 8192**<br/>Size of the internal log event queue. |
+| `maxBatchSize` | *int* | **Default: 128**<br/>Maximum number of log events put into CloudWatch in single request. |
+| `maxBatchTimeMillis` | *long* | **Default: 5000**<br/>Maximum time in milliseconds to collect log events to submit batch. |
+| `maxQueueWaitTimeMillis` | *long* | **Default: 100**<br/>Maximum time in milliseconds to wait if internal queue is full before using the emergency appender (see below). |
+| `initialWaitTimeMillis` | *long* | **Default: 0**<br/>Initial wait time before logging messages.  Helps if server needs to configure itself initially. |
+| `internalQueueSize` | *int* | **Default: 8192**<br/>Size of the internal log event queue. |
 | `createLogDests` | *boolean* | **Default: true**<br/>Create the CloudWatch log and stream if they don't exist. |
 
 ### Emergency Appender

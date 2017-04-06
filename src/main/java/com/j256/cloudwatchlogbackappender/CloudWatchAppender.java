@@ -61,6 +61,8 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	private static final boolean DEFAULT_CREATE_LOG_DESTS = true;
 	/** max time to wait in millis before dropping a log event on the floor */
 	private static final long DEFAULT_MAX_QUEUE_WAIT_TIME_MILLIS = 100;
+	/** time to wait to initialize which helps when application is starting up */
+	private static final long DEFAULT_INITIAL_WAIT_TIME_MILLIS = 0;
 
 	private String accessKey;
 	private String secretKey;
@@ -74,6 +76,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	private long maxQueueWaitTimeMillis = DEFAULT_MAX_QUEUE_WAIT_TIME_MILLIS;
 	private int internalQueueSize = DEFAULT_INTERNAL_QUEUE_SIZE;
 	private boolean createLogDests = DEFAULT_CREATE_LOG_DESTS;
+	private long initialWaitTimeMillis = DEFAULT_INITIAL_WAIT_TIME_MILLIS;
 
 	private AWSLogsClient awsLogsClient;
 
@@ -226,6 +229,11 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		this.createLogDests = createLogDests;
 	}
 
+	// not-required, default is 0
+	public void setInitialWaitTimeMillis(long initialWaitTimeMillis) {
+		this.initialWaitTimeMillis = initialWaitTimeMillis;
+	}
+
 	@Override
 	public void addAppender(Appender<ILoggingEvent> appender) {
 		if (emergencyAppender == null) {
@@ -291,6 +299,13 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 
 		@Override
 		public void run() {
+
+			try {
+				Thread.sleep(initialWaitTimeMillis);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				return;
+			}
 
 			List<ILoggingEvent> events = new ArrayList<ILoggingEvent>(maxBatchSize);
 			Thread thread = Thread.currentThread();
