@@ -537,6 +537,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			AmazonEC2Client ec2Client = null;
 			try {
 				ec2Client = new AmazonEC2Client(awsCredentials);
+				ec2Client.setRegion(RegionUtils.getRegion(region));
 				DescribeTagsRequest request = new DescribeTagsRequest();
 				request.setFilters(Arrays.asList(new Filter("resource-type").withValues("instance"),
 						new Filter("resource-id").withValues(instanceId)));
