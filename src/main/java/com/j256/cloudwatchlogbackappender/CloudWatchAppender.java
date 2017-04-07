@@ -63,6 +63,8 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	private static final long DEFAULT_MAX_QUEUE_WAIT_TIME_MILLIS = 100;
 	/** time to wait to initialize which helps when application is starting up */
 	private static final long DEFAULT_INITIAL_WAIT_TIME_MILLIS = 0;
+	/** how many times to retry a cloudwatch request */
+	private static final int PUT_REQUEST_RETRY_COUNT = 2;
 
 	private String accessKey;
 	private String secretKey;
@@ -393,16 +395,24 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 					logEvents.add(logEvent);
 				}
 
-				PutLogEventsRequest request =
-						new PutLogEventsRequest(logGroup, logStream, logEvents).withSequenceToken(sequenceToken);
-				PutLogEventsResult result = awsLogsClient.putLogEvents(request);
-				sequenceToken = result.getNextSequenceToken();
+				for (int i = 0; i < PUT_REQUEST_RETRY_COUNT; i++) {
+					try {
+						PutLogEventsRequest request = new PutLogEventsRequest(logGroup, logStream, logEvents);
+						if (sequenceToken != null) {
+							request.withSequenceToken(sequenceToken);
+						}
+						PutLogEventsResult result = awsLogsClient.putLogEvents(request);
+						sequenceToken = result.getNextSequenceToken();
+						exception = null;
+						break;
+					} catch (InvalidSequenceTokenException iste) {
+						exception = iste;
+						sequenceToken = iste.getExpectedSequenceToken();
+					}
+				}
 			} catch (DataAlreadyAcceptedException daac) {
 				exception = daac;
 				sequenceToken = daac.getExpectedSequenceToken();
-			} catch (InvalidSequenceTokenException iste) {
-				exception = iste;
-				sequenceToken = iste.getExpectedSequenceToken();
 			} catch (Exception e) {
 				// catch everything else to make sure we don't quit the thread
 				exception = e;
@@ -443,7 +453,6 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 
 		private void verifyLogGroupExists() {
 			DescribeLogGroupsRequest request = new DescribeLogGroupsRequest().withLogGroupNamePrefix(logGroup);
-			sequenceToken = request.getNextToken();
 			DescribeLogGroupsResult result = awsLogsClient.describeLogGroups(request);
 			for (LogGroup group : result.getLogGroups()) {
 				if (logGroup.equals(group.getLogGroupName())) {

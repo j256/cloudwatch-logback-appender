@@ -1,5 +1,6 @@
 1.4: 4/6/2017
 	* Added initialWaitTimeMillis to not log initially when application starts up.
+	* Better handling of sequence token with a retry.
 
 1.3: 4/5/2017
 	* Fixed the thread name in the output.  Sigh.
