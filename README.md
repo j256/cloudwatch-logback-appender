@@ -62,7 +62,7 @@ Here is the complete list of the appender properties.
 | `region` | *string* | AWS region needed by CloudWatch API |
 | `logGroup` | *string* | Log group name |
 | `logStream` | *string* | Log stream name |
-| `accessKey` | *string* | **Default: none, code will use ```DefaultAWSCredentialsProviderChain```** <br /> AWS API access key, see AWS Permissions below |
+| `accessKeyId` | *string* | **Default: none, code will use ```DefaultAWSCredentialsProviderChain```** <br /> AWS API access key ID, see AWS Permissions below |
 | `secretKey` | *string* | **Default: none, code will use ```DefaultAWSCredentialsProviderChain```** <br /> AWS API secret key, see AWS Permissions below |
 | `maxBatchSize` | *int* | **Default: 128**<br/>Maximum number of log events put into CloudWatch in single request. |
 | `maxBatchTimeMillis` | *long* | **Default: 5000**<br/>Maximum time in milliseconds to collect log events to submit batch. |
@@ -93,9 +93,11 @@ If no emergency appender is configured and a problem does happen then the log me
 
 ### AWS Permissions
 
-You can specify the AWS CloudWatch permissions in a number of ways.  If you use the ```accessKey``` and ```secretKey```
-settings in the ```logback.xml``` file then the appender will use those credentials directly.  If they are not specified
-then the appender will use the ```DefaultAWSCredentialsProviderChain``` which looks the access and secret keys in:
+You can specify the AWS CloudWatch permissions in a number of ways.  If you use the ```accessKeyId``` and ```secretKey```
+settings in the ```logback.xml``` file then the appender will use those credentials directly.  You can also set the
+```cloudwatchappender.aws.accessKeyId``` and ```cloudwatchappender.aws.secretKey``` Java System properties which will be
+used.  If neither of those are specified then the appender will use the ```DefaultAWSCredentialsProviderChain``` which
+looks for the access and secret keys in:
 
 * Environment Variables: ```AWS_ACCESS_KEY_ID``` and ```AWS_SECRET_ACCESS_KEY``` or ```AWS_ACCESS_KEY``` and ```AWS_SECRET_KEY```
 * Java System Properties: ```aws.accessKeyId``` and ```aws.secretKey```

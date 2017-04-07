@@ -65,8 +65,12 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	private static final long DEFAULT_INITIAL_WAIT_TIME_MILLIS = 0;
 	/** how many times to retry a cloudwatch request */
 	private static final int PUT_REQUEST_RETRY_COUNT = 2;
+	/** property looked for to find the aws access-key-id */
+	private static final String AWS_ACCESS_KEY_ID_PROPERTY = "cloudwatchappender.aws.accessKeyId";
+	/** property looked for to find the aws secret-key*/
+	private static final String AWS_SECRET_KEY_PROPERTY = "cloudwatchappender.aws.secretKey";
 
-	private String accessKey;
+	private String accessKeyId;
 	private String secretKey;
 	private String region;
 	private String logGroup;
@@ -181,8 +185,8 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	}
 
 	// not-required, default is to use the DefaultAWSCredentialsProviderChain
-	public void setAccessKey(String accessKey) {
-		this.accessKey = accessKey;
+	public void setAccessKeyId(String accessKeyId) {
+		this.accessKeyId = accessKeyId;
 	}
 
 	// not-required, default is to use the DefaultAWSCredentialsProviderChain
@@ -472,10 +476,14 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 
 		private void initialize() {
 			AWSCredentials awsCredentials;
-			if (MiscUtils.isBlank(accessKey)) {
+			if (MiscUtils.isBlank(accessKeyId)) {
+				accessKeyId = System.getProperty(AWS_ACCESS_KEY_ID_PROPERTY);
+				secretKey = System.getProperty(AWS_SECRET_KEY_PROPERTY);
+			}
+			if (MiscUtils.isBlank(accessKeyId)) {
 				awsCredentials = new DefaultAWSCredentialsProviderChain().getCredentials();
 			} else {
-				awsCredentials = new BasicAWSCredentials(accessKey, secretKey);
+				awsCredentials = new BasicAWSCredentials(accessKeyId, secretKey);
 			}
 			awsLogsClient = new AWSLogsClient(awsCredentials);
 			awsLogsClient.setRegion(RegionUtils.getRegion(region));

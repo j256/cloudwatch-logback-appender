@@ -1,4 +1,5 @@
 1.5: 4/6/2017
+	* Added support for cloudwatchappender.aws.accessKeyId cloudwatchappender.aws.secretKey properties.
 	* Better handling of sequence token with a retry.
 	* Added better unit tests and fixed a couple of wiring issues. 
 
