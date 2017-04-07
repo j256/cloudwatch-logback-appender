@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.j256.cloudwatchlogbackappender</groupId>
 	<artifactId>cloudwatchlogbackappender</artifactId>
@@ -196,7 +197,7 @@
 		<aws-version>1.10.40</aws-version>
 		<!-- test dependencies -->
 		<junit-version>4.8.1</junit-version>
-		<easymock-version>2.3</easymock-version>
+		<easymock-version>3.4</easymock-version>
 	</properties>
 	<dependencies>
 		<!-- optional dependencies -->
@@ -225,5 +226,17 @@
 			<version>${easymock-version}</version>
 			<scope>test</scope>
 		</dependency>
+	<!-- 	<dependency>
+			<groupId>org.easymock</groupId>
+			<artifactId>easymockclassextension</artifactId>
+			<version>${easymockclassextension-version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>cglib</groupId>
+			<artifactId>cglib-nodep</artifactId>
+			<version>${cglib-version}</version>
+			<scope>test</scope>
+		</dependency> -->
 	</dependencies>
 </project>

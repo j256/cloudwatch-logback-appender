@@ -81,6 +81,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	private long initialWaitTimeMillis = DEFAULT_INITIAL_WAIT_TIME_MILLIS;
 
 	private AWSLogsClient awsLogsClient;
+	private long eventsWrittenCount;
 
 	private BlockingQueue<ILoggingEvent> loggingEventQueue;
 	private Thread cloudWatchWriterThread;
@@ -112,6 +113,9 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		if (MiscUtils.isBlank(logStream)) {
 			throw new IllegalStateException("Log stream name not set or invalid for appender: " + logStream);
 		}
+		if (layout == null) {
+			throw new IllegalStateException("Layout was not set for appender");
+		}
 
 		loggingEventQueue = new ArrayBlockingQueue<ILoggingEvent>(internalQueueSize);
 
@@ -120,7 +124,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		cloudWatchWriterThread.setDaemon(true);
 		cloudWatchWriterThread.start();
 
-		if (!emergencyAppender.isStarted()) {
+		if (emergencyAppender != null && !emergencyAppender.isStarted()) {
 			emergencyAppender.start();
 		}
 		super.start();
@@ -161,7 +165,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		Boolean stopped = stopMessagesThreadLocal.get();
 		if (stopped == null || !stopped) {
 			try {
-				if (loggingEvent instanceof LoggingEvent) {
+				if (loggingEvent instanceof LoggingEvent && ((LoggingEvent) loggingEvent).getThreadName() == null) {
 					// we need to do this so that the right thread gets set in the event
 					((LoggingEvent) loggingEvent).setThreadName(Thread.currentThread().getName());
 				}
@@ -236,6 +240,21 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		this.initialWaitTimeMillis = initialWaitTimeMillis;
 	}
 
+	// not required, for testing purposes
+	void setAwsLogsClient(AWSLogsClient awsLogsClient) {
+		this.awsLogsClient = awsLogsClient;
+	}
+
+	// for testing purposes
+	long getEventsWrittenCount() {
+		return eventsWrittenCount;
+	}
+
+	// for testing purposes
+	boolean isWarningMessagePrinted() {
+		return warningMessagePrinted;
+	}
+
 	@Override
 	public void addAppender(Appender<ILoggingEvent> appender) {
 		if (emergencyAppender == null) {
@@ -253,7 +272,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 
 	@Override
 	public Appender<ILoggingEvent> getAppender(String name) {
-		if (emergencyAppender != null && emergencyAppender.getName().equals(name)) {
+		if (emergencyAppender != null && name != null && name.equals(emergencyAppender.getName())) {
 			return emergencyAppender;
 		} else {
 			return null;
@@ -267,8 +286,10 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 
 	@Override
 	public void detachAndStopAllAppenders() {
-		emergencyAppender.stop();
-		emergencyAppender = null;
+		if (emergencyAppender != null) {
+			emergencyAppender.stop();
+			emergencyAppender = null;
+		}
 	}
 
 	@Override
@@ -324,7 +345,10 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 					} catch (InterruptedException ex) {
 						Thread.currentThread().interrupt();
 						// write what we have and bail
-						writeEvents(events);
+						if (!events.isEmpty()) {
+							writeEvents(events);
+							events.clear();
+						}
 						return;
 					}
 					if (loggingEvent == null) {
@@ -357,6 +381,10 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 					events.clear();
 				}
 			}
+			if (!events.isEmpty()) {
+				writeEvents(events);
+				events.clear();
+			}
 		}
 
 		private void writeEvents(List<ILoggingEvent> events) {
@@ -366,7 +394,9 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 				Exception exception = null;
 				try {
 					stopMessagesThreadLocal.set(true);
-					initialize();
+					if (awsLogsClient == null) {
+						initialize();
+					}
 				} catch (Exception e) {
 					exception = e;
 				} finally {
@@ -404,6 +434,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 						PutLogEventsResult result = awsLogsClient.putLogEvents(request);
 						sequenceToken = result.getNextSequenceToken();
 						exception = null;
+						eventsWrittenCount += logEvents.size();
 						break;
 					} catch (InvalidSequenceTokenException iste) {
 						exception = iste;
@@ -417,11 +448,13 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 				// catch everything else to make sure we don't quit the thread
 				exception = e;
 			} finally {
-				stopMessagesThreadLocal.set(false);
 				if (exception != null) {
-					logError("Exception thrown when creating logging " + events.size() + " events", exception);
+					// we do this because we don't want to go recursive
+					events.add(makeEvent(Level.ERROR,
+							"Exception thrown when creating logging " + events.size() + " events", exception));
 					appendToEmergencyAppender(events);
 				}
+				stopMessagesThreadLocal.set(false);
 			}
 		}
 
@@ -493,8 +526,9 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 				return;
 			}
 			Ec2InstanceIdConverter.setInstanceId(instanceId);
+			AmazonEC2Client ec2Client = null;
 			try {
-				AmazonEC2Client ec2Client = new AmazonEC2Client(awsCredentials);
+				ec2Client = new AmazonEC2Client(awsCredentials);
 				DescribeTagsRequest request = new DescribeTagsRequest();
 				request.setFilters(Arrays.asList(new Filter("resource-type").withValues("instance"),
 						new Filter("resource-id").withValues(instanceId)));
@@ -509,6 +543,10 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 				logInfo("Could not find EC2 instance name in tags: " + tags);
 			} catch (AmazonServiceException ase) {
 				logWarn("Looking up EC2 instance-name threw", ase);
+			} finally {
+				if (ec2Client != null) {
+					ec2Client.shutdown();
+				}
 			}
 			// if we can't lookup the instance name then set is as the instance-id
 			Ec2InstanceNameConverter.setInstanceName(instanceId);
@@ -527,6 +565,10 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		}
 
 		private void appendEvent(Level level, String message, Throwable th) {
+			append(makeEvent(level, message, th));
+		}
+
+		private LoggingEvent makeEvent(Level level, String message, Throwable th) {
 			LoggingEvent event = new LoggingEvent();
 			event.setLoggerName(CloudWatchAppender.class.getName());
 			event.setLevel(level);
@@ -535,7 +577,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			if (th != null) {
 				event.setThrowableProxy(new ThrowableProxy(th));
 			}
-			append(event);
+			return event;
 		}
 	}
 }
