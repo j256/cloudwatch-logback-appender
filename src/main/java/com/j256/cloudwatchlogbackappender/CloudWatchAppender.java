@@ -475,17 +475,15 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		}
 
 		private void initialize() {
-			AWSCredentials awsCredentials;
 			if (MiscUtils.isBlank(accessKeyId)) {
 				accessKeyId = System.getProperty(AWS_ACCESS_KEY_ID_PROPERTY);
 				secretKey = System.getProperty(AWS_SECRET_KEY_PROPERTY);
 			}
 			if (MiscUtils.isBlank(accessKeyId)) {
-				awsCredentials = new DefaultAWSCredentialsProviderChain().getCredentials();
+				awsLogsClient = new AWSLogsClient(); // uses DefaultAWSCredentialsProviderChain
 			} else {
-				awsCredentials = new BasicAWSCredentials(accessKeyId, secretKey);
+				awsLogsClient = new AWSLogsClient(new BasicAWSCredentials(accessKeyId, secretKey));
 			}
-			awsLogsClient = new AWSLogsClient(awsCredentials);
 			awsLogsClient.setRegion(RegionUtils.getRegion(region));
 			verifyLogGroupExists();
 			verifyLogStreamExists();
