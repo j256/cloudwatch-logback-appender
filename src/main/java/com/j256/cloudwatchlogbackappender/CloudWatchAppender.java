@@ -10,6 +10,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.regions.RegionUtils;
@@ -481,11 +482,13 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 				secretKey = System.getProperty(AWS_SECRET_KEY_PROPERTY);
 			}
 			if (MiscUtils.isBlank(accessKeyId)) {
-				awsCredentials = new DefaultAWSCredentialsProviderChain().getCredentials();
+				AWSCredentialsProvider credentialProvider = new DefaultAWSCredentialsProviderChain();
+				awsCredentials = credentialProvider.getCredentials();
+				awsLogsClient = new AWSLogsClient(credentialProvider);
 			} else {
 				awsCredentials = new BasicAWSCredentials(accessKeyId, secretKey);
+				awsLogsClient = new AWSLogsClient(awsCredentials);
 			}
-			awsLogsClient = new AWSLogsClient(awsCredentials);
 			awsLogsClient.setRegion(RegionUtils.getRegion(region));
 			verifyLogGroupExists();
 			verifyLogStreamExists();

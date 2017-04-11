@@ -1,3 +1,6 @@
+1.7: 4/11/2017
+	* Fixed problem with the DefaultAWSCredentialsProviderChain properties.  Thanks to alexfoxgill.
+
 1.6: 4/7/2017
 	* Fix to the EC2 instance name lookup to add in the region.  Thanks to alexfoxgill.
 
