@@ -9,10 +9,10 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import com.amazonaws.AmazonServiceException;
-import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.amazonaws.internal.StaticCredentialsProvider;
 import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.amazonaws.services.ec2.model.DescribeTagsRequest;
@@ -68,7 +68,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	private static final int PUT_REQUEST_RETRY_COUNT = 2;
 	/** property looked for to find the aws access-key-id */
 	private static final String AWS_ACCESS_KEY_ID_PROPERTY = "cloudwatchappender.aws.accessKeyId";
-	/** property looked for to find the aws secret-key*/
+	/** property looked for to find the aws secret-key */
 	private static final String AWS_SECRET_KEY_PROPERTY = "cloudwatchappender.aws.secretKey";
 
 	private String accessKeyId;
@@ -476,23 +476,23 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		}
 
 		private void initialize() {
-			AWSCredentials awsCredentials;
+			AWSCredentialsProvider credentialProvider;
 			if (MiscUtils.isBlank(accessKeyId)) {
+				// try to use our class properties
 				accessKeyId = System.getProperty(AWS_ACCESS_KEY_ID_PROPERTY);
 				secretKey = System.getProperty(AWS_SECRET_KEY_PROPERTY);
 			}
 			if (MiscUtils.isBlank(accessKeyId)) {
-				AWSCredentialsProvider credentialProvider = new DefaultAWSCredentialsProviderChain();
-				awsCredentials = credentialProvider.getCredentials();
-				awsLogsClient = new AWSLogsClient(credentialProvider);
+				// if we are still blank then use the default credentials provider
+				credentialProvider = new DefaultAWSCredentialsProviderChain();
 			} else {
-				awsCredentials = new BasicAWSCredentials(accessKeyId, secretKey);
-				awsLogsClient = new AWSLogsClient(awsCredentials);
+				credentialProvider = new StaticCredentialsProvider(new BasicAWSCredentials(accessKeyId, secretKey));
 			}
+			awsLogsClient = new AWSLogsClient(credentialProvider);
 			awsLogsClient.setRegion(RegionUtils.getRegion(region));
 			verifyLogGroupExists();
 			verifyLogStreamExists();
-			lookupInstanceName(awsCredentials);
+			lookupInstanceName(credentialProvider);
 		}
 
 		private void verifyLogGroupExists() {
@@ -531,7 +531,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			}
 		}
 
-		private void lookupInstanceName(AWSCredentials awsCredentials) {
+		private void lookupInstanceName(AWSCredentialsProvider credentialProvider) {
 			String instanceId = EC2MetadataUtils.getInstanceId();
 			if (instanceId == null) {
 				return;
@@ -539,7 +539,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			Ec2InstanceIdConverter.setInstanceId(instanceId);
 			AmazonEC2Client ec2Client = null;
 			try {
-				ec2Client = new AmazonEC2Client(awsCredentials);
+				ec2Client = new AmazonEC2Client(credentialProvider);
 				ec2Client.setRegion(RegionUtils.getRegion(region));
 				DescribeTagsRequest request = new DescribeTagsRequest();
 				request.setFilters(Arrays.asList(new Filter("resource-type").withValues("instance"),
@@ -560,7 +560,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 					ec2Client.shutdown();
 				}
 			}
-			// if we can't lookup the instance name then set is as the instance-id
+			// if we can't lookup the instance name then set it as the instance-id
 			Ec2InstanceNameConverter.setInstanceName(instanceId);
 		}
 
