@@ -1,3 +1,6 @@
+1.6: 4/7/2017
+	* Fix to the EC2 instance name lookup to add in the region.  Thanks to alexfoxgill.
+
 1.5: 4/6/2017
 	* Added support for cloudwatchappender.aws.accessKeyId cloudwatchappender.aws.secretKey properties.
 	* Better handling of sequence token with a retry.
