@@ -1,3 +1,6 @@
+1.8: 5/4/2017
+	* Added sorting of events before posting to CloudWatch because otherwise an exception is thrown by AWS.
+
 1.7: 4/11/2017
 	* Fixed problem with the DefaultAWSCredentialsProviderChain properties.  Thanks to alexfoxgill.
 

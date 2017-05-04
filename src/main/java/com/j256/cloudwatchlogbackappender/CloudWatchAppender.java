@@ -2,6 +2,8 @@ package com.j256.cloudwatchlogbackappender;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -92,6 +94,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	private Thread cloudWatchWriterThread;
 	private final ThreadLocal<Boolean> stopMessagesThreadLocal = new ThreadLocal<Boolean>();
 	private volatile boolean warningMessagePrinted;
+	private final InputLogEventComparator inputLogEventComparator = new InputLogEventComparator();
 
 	public CloudWatchAppender() {
 		// for spring
@@ -429,6 +432,8 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 							new InputLogEvent().withTimestamp(event.getTimeStamp()).withMessage(message);
 					logEvents.add(logEvent);
 				}
+				// events must be in sorted order according to AWS otherwise an exception is thrown
+				Collections.sort(logEvents, inputLogEventComparator);
 
 				for (int i = 0; i < PUT_REQUEST_RETRY_COUNT; i++) {
 					try {
@@ -590,6 +595,16 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 				event.setThrowableProxy(new ThrowableProxy(th));
 			}
 			return event;
+		}
+	}
+
+	/**
+	 * Compares a log event by it's timestamp value.
+	 */
+	private static class InputLogEventComparator implements Comparator<InputLogEvent> {
+		@Override
+		public int compare(InputLogEvent o1, InputLogEvent o2) {
+			return Long.compare(o1.getTimestamp(), o2.getTimestamp());
 		}
 	}
 }
