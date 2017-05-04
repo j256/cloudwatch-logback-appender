@@ -103,6 +103,8 @@ looks for the access and secret keys in:
 * Credential file at the default location (`~/.aws/credentials`) shared by all AWS SDKs and the AWS CLI
 * Instance profile credentials delivered through the Amazon EC2 metadata service
 
+## IAM Permissions
+
 When making any AWS API calls, we typically create a IAM user with specific permissions so if any API keys are stolen,
 the hacker only have limited access to our AWS services.  To get the appender to be able to publish to CloudWatch,
 the following IAM policy is required to create the log group and put log events to CloudWatch.
