@@ -225,17 +225,5 @@
 			<version>${easymock-version}</version>
 			<scope>test</scope>
 		</dependency>
-	<!-- 	<dependency>
-			<groupId>org.easymock</groupId>
-			<artifactId>easymockclassextension</artifactId>
-			<version>${easymockclassextension-version}</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>cglib</groupId>
-			<artifactId>cglib-nodep</artifactId>
-			<version>${cglib-version}</version>
-			<scope>test</scope>
-		</dependency> -->
 	</dependencies>
 </project>
