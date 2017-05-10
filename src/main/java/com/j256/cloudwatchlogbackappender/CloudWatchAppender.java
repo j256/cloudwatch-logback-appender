@@ -1,5 +1,6 @@
 package com.j256.cloudwatchlogbackappender;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -403,7 +404,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 				try {
 					stopMessagesThreadLocal.set(true);
 					if (awsLogsClient == null) {
-						initialize();
+						createLogsClient();
 					}
 				} catch (Exception e) {
 					exception = e;
@@ -480,7 +481,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			}
 		}
 
-		private void initialize() {
+		private void createLogsClient() {
 			AWSCredentialsProvider credentialProvider;
 			if (MiscUtils.isBlank(accessKeyId)) {
 				// try to use our class properties
@@ -510,7 +511,15 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			}
 			if (createLogDests) {
 				CreateLogGroupRequest createRequest = new CreateLogGroupRequest(logGroup);
-				awsLogsClient.createLogGroup(createRequest);
+//				awsLogsClient.createLogGroup(createRequest);
+				try {
+					Method createLogGroupMethod = awsLogsClient.getClass().getMethod("createLogGroup",
+							CreateLogGroupRequest.class);
+					// we do this to hack around the problems between AWS 1.10 and 1.11 SDK
+					createLogGroupMethod.invoke(awsLogsClient, createRequest);
+				} catch (Exception e) {
+					logError("Problems create log-group '" + logGroup + "'", e);
+				}
 				logInfo("Created log-group '" + logGroup + "'");
 			} else {
 				logWarn("Log-group '" + logGroup + "' doesn't exist and not created", null);
@@ -529,7 +538,15 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			}
 			if (createLogDests) {
 				CreateLogStreamRequest createRequest = new CreateLogStreamRequest(logGroup, logStream);
-				awsLogsClient.createLogStream(createRequest);
+//				awsLogsClient.createLogStream(createRequest);
+				try {
+					// we do this to hack around the problems between AWS 1.10 and 1.11 SDK
+					Method createLogStreamMethod = awsLogsClient.getClass().getMethod("createLogStream",
+							CreateLogStreamRequest.class);
+					createLogStreamMethod.invoke(awsLogsClient, createRequest);
+				} catch (Exception e) {
+					logError("Problems create log-stream '" + logStream + "'", e);
+				}
 				logInfo("Created log-stream '" + logStream + "' for group '" + logGroup + "'");
 			} else {
 				logWarn("Log-stream '" + logStream + "' doesn't exist and not created", null);
