@@ -1,3 +1,6 @@
+1.10: 5/10/2017
+	* Got rid of Long.compare(...).  Not in Java 6.
+
 1.9: 5/10/2017
 	* Create the Cloudwatch log-group and log-stream using reflection to hack around the AWS SDK incompatibility.
 

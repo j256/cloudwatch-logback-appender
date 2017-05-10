@@ -620,7 +620,19 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	private static class InputLogEventComparator implements Comparator<InputLogEvent> {
 		@Override
 		public int compare(InputLogEvent o1, InputLogEvent o2) {
-			return Long.compare(o1.getTimestamp(), o2.getTimestamp());
+			if (o1.getTimestamp() == null) {
+				if (o2.getTimestamp() == null) {
+					return 0;
+				} else {
+					// null - long
+					return -1;
+				}
+			} else if (o2.getTimestamp() == null) {
+				// long - null
+				return 1;
+			} else {
+				return o1.getTimestamp().compareTo(o2.getTimestamp());
+			}
 		}
 	}
 }
