@@ -12,6 +12,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import com.amazonaws.AmazonServiceException;
+import com.amazonaws.AmazonWebServiceRequest;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
@@ -510,17 +511,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 				}
 			}
 			if (createLogDests) {
-				CreateLogGroupRequest createRequest = new CreateLogGroupRequest(logGroup);
-//				awsLogsClient.createLogGroup(createRequest);
-				try {
-					Method createLogGroupMethod = awsLogsClient.getClass().getMethod("createLogGroup",
-							CreateLogGroupRequest.class);
-					// we do this to hack around the problems between AWS 1.10 and 1.11 SDK
-					createLogGroupMethod.invoke(awsLogsClient, createRequest);
-				} catch (Exception e) {
-					logError("Problems create log-group '" + logGroup + "'", e);
-				}
-				logInfo("Created log-group '" + logGroup + "'");
+				callLogClientMethod("createLogGroup", new CreateLogGroupRequest(logGroup));
 			} else {
 				logWarn("Log-group '" + logGroup + "' doesn't exist and not created", null);
 			}
@@ -537,19 +528,27 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 				}
 			}
 			if (createLogDests) {
-				CreateLogStreamRequest createRequest = new CreateLogStreamRequest(logGroup, logStream);
-//				awsLogsClient.createLogStream(createRequest);
-				try {
-					// we do this to hack around the problems between AWS 1.10 and 1.11 SDK
-					Method createLogStreamMethod = awsLogsClient.getClass().getMethod("createLogStream",
-							CreateLogStreamRequest.class);
-					createLogStreamMethod.invoke(awsLogsClient, createRequest);
-				} catch (Exception e) {
-					logError("Problems create log-stream '" + logStream + "'", e);
-				}
-				logInfo("Created log-stream '" + logStream + "' for group '" + logGroup + "'");
+				callLogClientMethod("createLogStream", new CreateLogStreamRequest(logGroup, logStream));
 			} else {
 				logWarn("Log-stream '" + logStream + "' doesn't exist and not created", null);
+			}
+		}
+
+		/**
+		 * This is a hack to work around the problems that were introduced when the appender was compiled with AWS SDK
+		 * version 1.9 or 1.10 but the user was running with version 1.11.
+		 * 
+		 * The problem was that the createLogStream() method added a return object somewhere between 1.10 and 1.11 which
+		 * broke backwards compatibility and the applications would throw NoSuchMethodError. Using reflection causes the
+		 * linkage to be weaker and seems to work.
+		 */
+		private void callLogClientMethod(String methodName, AmazonWebServiceRequest arg) {
+			try {
+				Method method = awsLogsClient.getClass().getMethod(methodName, arg.getClass());
+				method.invoke(awsLogsClient, arg);
+				logInfo("Created: " + arg);
+			} catch (Exception e) {
+				logError("Problems creating: " + arg, e);
 			}
 		}
 
