@@ -193,7 +193,7 @@
 	<properties>
 		<!-- optional dependencies -->
 		<logback.version>1.0.11</logback.version>
-		<aws-version>1.10.40</aws-version>
+		<aws-version>1.11.126</aws-version>
 		<!-- test dependencies -->
 		<junit-version>4.8.1</junit-version>
 		<easymock-version>3.4</easymock-version>
