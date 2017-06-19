@@ -8,7 +8,7 @@ there seem to be many projects like this out there but I could find none of them
 self-contained and that were published to the central Maven repo.
 
 * Code available from the [git repository](https://github.com/j256/cloudwatch-logback-appender).
-* Maven packages are published via the [maven central repo](http://repo1.maven.org/maven2/com/j256/cloudwatchlogbackappender/cloudwatchlogbackappender/).	
+* Maven packages are published via [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.j256.cloudwatchlogbackappender/cloudwatchlogbackappender/badge.svg?style=flat-square)](https://maven-badges.herokuapp.com/maven-central/com.j256.cloudwatchlogbackappender/cloudwatchlogbackappender/)
 
 Enjoy, Gray Watson
 
