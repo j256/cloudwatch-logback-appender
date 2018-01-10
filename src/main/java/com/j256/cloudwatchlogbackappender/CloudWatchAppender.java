@@ -145,7 +145,6 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		if (!started) {
 			return;
 		}
-		super.stop();
 
 		cloudWatchWriterThread.interrupt();
 		try {
@@ -157,6 +156,8 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			awsLogsClient.shutdown();
 			awsLogsClient = null;
 		}
+
+		super.stop();
 	}
 
 	@Override
@@ -354,12 +355,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 						loggingEvent = loggingEventQueue.poll(timeoutMillis, TimeUnit.MILLISECONDS);
 					} catch (InterruptedException ex) {
 						Thread.currentThread().interrupt();
-						// write what we have and bail
-						if (!events.isEmpty()) {
-							writeEvents(events);
-							events.clear();
-						}
-						return;
+						break;
 					}
 					if (loggingEvent == null) {
 						// wait timed out
