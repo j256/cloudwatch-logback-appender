@@ -25,6 +25,24 @@ Enjoy, Gray Watson
 </dependencies>
 ```
 
+## Dependencies
+
+By default the appender has dependencies on version 1.10.40 of the log (cloudwatch) and ec2 AWS SDK
+packages.  You can add a exclusion for these packages if you want to depend on different versions.
+
+``` xml
+<dependency>
+	<groupId>com.amazonaws</groupId>
+	<artifactId>aws-java-sdk-logs</artifactId>
+	<version>1.10.40</version>
+</dependency>
+<dependency>
+	<groupId>com.amazonaws</groupId>
+	<artifactId>aws-java-sdk-ec2</artifactId>
+	<version>1.10.40</version>
+</dependency>
+```
+
 # logback.xml Configuration
 
 Minimal logback appender configuration:
@@ -48,7 +66,7 @@ You may want to use our `Ec2PatternLayout` class which adds support for the ec2 
 <appender name="CLOUDWATCH" class="com.j256.cloudwatchlogbackappender.CloudWatchAppender">
 	...
 	<layout class="com.j256.cloudwatchlogbackappender.Ec2PatternLayout">
-		<pattern>[%instance] [%thread] %level %logger{20} - %msg%n%xThrowable</pattern>
+		<pattern>\[%instance\] \[%thread\] %level %logger{20} - %msg%n%xThrowable</pattern>
 	</layout>
 ```
 
