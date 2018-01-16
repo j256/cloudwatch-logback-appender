@@ -329,8 +329,8 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	private class CloudWatchWriter implements Runnable {
 
 		private String sequenceToken;
-		private String instanceId;
-		private String instanceName;
+		private String instanceId = "unknown";
+		private String instanceName = "unknown";
 		private String logStreamName;
 		private boolean initialized;
 
@@ -405,6 +405,9 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 					stopMessagesThreadLocal.set(true);
 					if (awsLogsClient == null) {
 						createLogsClient();
+					} else {
+						// mostly here for testing
+						logStreamName = buildLogStreamName();
 					}
 				} catch (Exception e) {
 					exception = e;
@@ -497,6 +500,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			awsLogsClient = new AWSLogsClient(credentialProvider);
 			awsLogsClient.setRegion(RegionUtils.getRegion(region));
 			lookupInstanceName(credentialProvider);
+			logStreamName = buildLogStreamName();
 			verifyLogGroupExists();
 			verifyLogStreamExists();
 		}
@@ -517,7 +521,6 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		}
 
 		private void verifyLogStreamExists() {
-			this.logStreamName = buildLogStreamName();
 			DescribeLogStreamsRequest request = new DescribeLogStreamsRequest().withLogGroupName(logGroupName)
 					.withLogStreamNamePrefix(logStreamName);
 			DescribeLogStreamsResult result = awsLogsClient.describeLogStreams(request);
@@ -607,8 +610,6 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		private void lookupInstanceName(AWSCredentialsProvider credentialProvider) {
 			instanceId = EC2MetadataUtils.getInstanceId();
 			if (instanceId == null) {
-				instanceId = "unknown";
-				instanceName = "unknown";
 				return;
 			}
 			Ec2InstanceIdConverter.setInstanceId(instanceId);
