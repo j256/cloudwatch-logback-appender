@@ -61,13 +61,13 @@ if [ "$release" != "$ver" ]; then
 	exit 1
 fi
 
-ver=`grep "^@set ${LIBRARY}_version" src/main/doc/$LIBRARY.texi | cut -f3 -d' '`
-if [ "$release" != "$ver" ]; then
-	/bin/echo "$LIBRARY.texi version seems wrong:"
-	grep "^@set ${LIBRARY}_version" src/main/doc/$LIBRARY.texi
-	/bin/echo -n "Press control-c to quit otherwise return.  [ok] "
-	read cont
-fi
+#ver=`grep "^@set ${LIBRARY}_version" src/main/doc/$LIBRARY.texi | cut -f3 -d' '`
+#if [ "$release" != "$ver" ]; then
+#	/bin/echo "$LIBRARY.texi version seems wrong:"
+#	grep "^@set ${LIBRARY}_version" src/main/doc/$LIBRARY.texi
+#	/bin/echo -n "Press control-c to quit otherwise return.  [ok] "
+#	read cont
+#fi
 
 #############################################################
 # run tests
