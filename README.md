@@ -59,8 +59,21 @@ Minimal logback appender configuration:
 </appender>
 ```
 
-You may want to use our `Ec2PatternLayout` class which adds support for the ec2 instance-name tag from the tokens
-`%instance`, `%instanceName`, and `%in`.  It also supports `%instanceId` and `%iid` for the instance-id as well.
+Cloudwatch unfortunately does not allow multiple hosts to write to the same log-stream.  If multiple servers are writing
+logs, you should configure the log-stream name with an instance-name suffix or something.  The `logStream` name setting
+supports the following tokens which expand into the instance-name: `%{instanceName}`, `%instanceName`, `%{instance}`,
+`%instance`, `%{in}`, and `%in`.  These expand into the instance-id: `%{instanceId}`, `%instanceId`, `%{iid}`, and
+`%iid`.  If the name is not available then the id will be used instead.  So you might want to use something like:
+
+``` xml
+	<logGroup>your-log-group-name-here</logGroup>
+	<logStream>general-%instance</logStream>
+```
+
+Similar patterns are available in the log entries themselves if you use our `Ec2PatternLayout` class which adds support
+for the ec2 instance-name tag from the tokens `%instance`, `%instanceName`, and `%in`.  It also supports `%instanceId`
+and `%iid` for the instance-id as well.  If the instance-name is not available then the instance-id will be used for the
+name instead.
 
 ``` xml
 <appender name="CLOUDWATCH" class="com.j256.cloudwatchlogbackappender.CloudWatchAppender">
@@ -69,8 +82,6 @@ You may want to use our `Ec2PatternLayout` class which adds support for the ec2 
 		<pattern>\[%instance\] \[%thread\] %level %logger{20} - %msg%n%xThrowable</pattern>
 	</layout>
 ```
-
-*NOTE:* If the instance-name is not available then the instance-id will be used for the name instead.
 
 Here is the complete list of the appender properties.
 

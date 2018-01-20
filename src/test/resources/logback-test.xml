@@ -9,12 +9,12 @@
 	<appender name="CLOUDWATCH" class="com.j256.cloudwatchlogbackappender.CloudWatchAppender">
 		<region>us-east-1</region>
 		<logGroup>test</logGroup>
-		<logStream>general</logStream>
+		<logStream>general-%instance</logStream>
 		<layout class="com.j256.cloudwatchlogbackappender.Ec2PatternLayout">
 			<!-- note: the %n is necessary to separate from any exceptions -->
 			<pattern>[%instance] [%thread] %level %logger{20} - %msg%n%xThrowable</pattern>
 		</layout>
-		<initialStartupSleepMillis>3000</initialStartupSleepMillis>
+		<initialWaitTimeMillis>3000</initialWaitTimeMillis>
 		<appender-ref ref="STDOUT" />
 	</appender>
 
