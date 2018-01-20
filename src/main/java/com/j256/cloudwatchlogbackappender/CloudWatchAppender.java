@@ -78,8 +78,8 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	private String accessKeyId;
 	private String secretKey;
 	private String region;
-	private String logGroup;
-	private String logStream;
+	private String logGroupName;
+	private String logStreamName;
 	private Layout<ILoggingEvent> layout;
 	private Appender<ILoggingEvent> emergencyAppender;
 	private int maxBatchSize = DEFAULT_MAX_BATCH_SIZE;
@@ -117,11 +117,11 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		if (MiscUtils.isBlank(region)) {
 			throw new IllegalStateException("Region not set or invalid for appender: " + region);
 		}
-		if (MiscUtils.isBlank(logGroup)) {
-			throw new IllegalStateException("Log group name not set or invalid for appender: " + logGroup);
+		if (MiscUtils.isBlank(logGroupName)) {
+			throw new IllegalStateException("Log group name not set or invalid for appender: " + logGroupName);
 		}
-		if (MiscUtils.isBlank(logStream)) {
-			throw new IllegalStateException("Log stream name not set or invalid for appender: " + logStream);
+		if (MiscUtils.isBlank(logStreamName)) {
+			throw new IllegalStateException("Log stream name not set or invalid for appender: " + logStreamName);
 		}
 		if (layout == null) {
 			throw new IllegalStateException("Layout was not set for appender");
@@ -207,13 +207,13 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	}
 
 	// required
-	public void setLogGroup(String logGroup) {
-		this.logGroup = logGroup;
+	public void setLogGroup(String logGroupName) {
+		this.logGroupName = logGroupName;
 	}
 
 	// required
-	public void setLogStream(String logStream) {
-		this.logStream = logStream;
+	public void setLogStream(String logStreamName) {
+		this.logStreamName = logStreamName;
 	}
 
 	// required
@@ -329,6 +329,9 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	private class CloudWatchWriter implements Runnable {
 
 		private String sequenceToken;
+		private String instanceId = "unknown";
+		private String instanceName = "unknown";
+		private String logStreamName;
 		private boolean initialized;
 
 		@Override
@@ -402,6 +405,9 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 					stopMessagesThreadLocal.set(true);
 					if (awsLogsClient == null) {
 						createLogsClient();
+					} else {
+						// mostly here for testing
+						logStreamName = buildLogStreamName();
 					}
 				} catch (Exception e) {
 					exception = e;
@@ -435,7 +441,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 
 				for (int i = 0; i < PUT_REQUEST_RETRY_COUNT; i++) {
 					try {
-						PutLogEventsRequest request = new PutLogEventsRequest(logGroup, logStream, logEvents);
+						PutLogEventsRequest request = new PutLogEventsRequest(logGroupName, logStreamName, logEvents);
 						if (sequenceToken != null) {
 							request.withSequenceToken(sequenceToken);
 						}
@@ -493,40 +499,93 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			}
 			awsLogsClient = new AWSLogsClient(credentialProvider);
 			awsLogsClient.setRegion(RegionUtils.getRegion(region));
+			lookupInstanceName(credentialProvider);
+			logStreamName = buildLogStreamName();
 			verifyLogGroupExists();
 			verifyLogStreamExists();
-			lookupInstanceName(credentialProvider);
 		}
 
 		private void verifyLogGroupExists() {
-			DescribeLogGroupsRequest request = new DescribeLogGroupsRequest().withLogGroupNamePrefix(logGroup);
+			DescribeLogGroupsRequest request = new DescribeLogGroupsRequest().withLogGroupNamePrefix(logGroupName);
 			DescribeLogGroupsResult result = awsLogsClient.describeLogGroups(request);
 			for (LogGroup group : result.getLogGroups()) {
-				if (logGroup.equals(group.getLogGroupName())) {
+				if (logGroupName.equals(group.getLogGroupName())) {
 					return;
 				}
 			}
 			if (createLogDests) {
-				callLogClientMethod("createLogGroup", new CreateLogGroupRequest(logGroup));
+				callLogClientMethod("createLogGroup", new CreateLogGroupRequest(logGroupName));
 			} else {
-				logWarn("Log-group '" + logGroup + "' doesn't exist and not created", null);
+				logWarn("Log-group '" + logGroupName + "' doesn't exist and not created", null);
 			}
 		}
 
 		private void verifyLogStreamExists() {
-			DescribeLogStreamsRequest request =
-					new DescribeLogStreamsRequest().withLogGroupName(logGroup).withLogStreamNamePrefix(logStream);
+			DescribeLogStreamsRequest request = new DescribeLogStreamsRequest().withLogGroupName(logGroupName)
+					.withLogStreamNamePrefix(logStreamName);
 			DescribeLogStreamsResult result = awsLogsClient.describeLogStreams(request);
 			for (LogStream stream : result.getLogStreams()) {
-				if (logStream.equals(stream.getLogStreamName())) {
+				if (logStreamName.equals(stream.getLogStreamName())) {
 					sequenceToken = stream.getUploadSequenceToken();
 					return;
 				}
 			}
 			if (createLogDests) {
-				callLogClientMethod("createLogStream", new CreateLogStreamRequest(logGroup, logStream));
+				callLogClientMethod("createLogStream", new CreateLogStreamRequest(logGroupName, logStreamName));
 			} else {
-				logWarn("Log-stream '" + logStream + "' doesn't exist and not created", null);
+				logWarn("Log-stream '" + logStreamName + "' doesn't exist and not created", null);
+			}
+		}
+
+		private String buildLogStreamName() {
+			String name = CloudWatchAppender.this.logStreamName;
+			if (name.indexOf('%') < 0) {
+				return name;
+			}
+			StringBuilder sb = new StringBuilder();
+			// NOTE: larger strings should be earlier in the array
+			String[][] patternValues = new String[][] { { "{instanceName}", instanceName }, //
+					{ "instanceName", instanceName }, //
+					{ "{instanceId}", instanceId }, //
+					{ "instanceId", instanceId }, //
+					{ "{instance}", instanceName }, //
+					{ "instance", instanceName }, //
+					{ "{iid}", instanceId }, //
+					{ "iid", instanceId }, //
+					{ "{in}", instanceName }, //
+					{ "in", instanceName }, //
+			};
+			// go through the name looking for %pattern that we can expand them
+			OUTER: for (int i = 0; i < name.length();) {
+				char ch = name.charAt(i);
+				i++;
+				if (ch != '%') {
+					sb.append(ch);
+					continue;
+				}
+				// run through pattern-values looking to see if the pattern is at this location, then insert value
+				for (String[] patternValue : patternValues) {
+					String pattern = patternValue[0];
+					if (isSubstringAtPosition(name, i, pattern)) {
+						sb.append(patternValue[1]);
+						i += pattern.length();
+						continue OUTER;
+					}
+				}
+				sb.append(ch);
+			}
+			return sb.toString();
+		}
+
+		private boolean isSubstringAtPosition(CharSequence cs, int pos, CharSequence substring) {
+			if (cs == null || cs.length() == 0) {
+				return false;
+			}
+			int max = pos + substring.length();
+			if (cs.length() < max) {
+				return false;
+			} else {
+				return cs.subSequence(pos, max).equals(substring);
 			}
 		}
 
@@ -549,7 +608,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		}
 
 		private void lookupInstanceName(AWSCredentialsProvider credentialProvider) {
-			String instanceId = EC2MetadataUtils.getInstanceId();
+			instanceId = EC2MetadataUtils.getInstanceId();
 			if (instanceId == null) {
 				return;
 			}
@@ -565,7 +624,8 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 				List<TagDescription> tags = result.getTags();
 				for (TagDescription tag : tags) {
 					if ("Name".equals(tag.getKey())) {
-						Ec2InstanceNameConverter.setInstanceName(tag.getValue());
+						instanceName = tag.getValue();
+						Ec2InstanceNameConverter.setInstanceName(instanceName);
 						return;
 					}
 				}

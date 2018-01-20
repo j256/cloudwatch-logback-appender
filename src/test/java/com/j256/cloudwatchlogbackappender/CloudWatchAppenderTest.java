@@ -207,4 +207,53 @@ public class CloudWatchAppenderTest {
 			// expected
 		}
 	}
+
+	@Test(timeout = 5000)
+	public void testInstanceName() throws InterruptedException {
+		CloudWatchAppender appender = new CloudWatchAppender();
+		AWSLogsClient awsLogClient = createMock(AWSLogsClient.class);
+		appender.setAwsLogsClient(awsLogClient);
+
+		appender.setMaxBatchSize(1);
+		appender.setRegion("region");
+		final String logGroup = "pfqoejpfqe";
+		appender.setLogGroup(logGroup);
+		String prefix = "logstream-";
+		appender.setLogStream(prefix + "%instanceName");
+		final String expectedLogStream = prefix + "unknown";
+		PatternLayout layout = new PatternLayout();
+		layout.setPattern("%msg");
+		layout.start();
+		appender.setLayout(layout);
+
+		LoggingEvent event = new LoggingEvent();
+		event.setTimeStamp(System.currentTimeMillis());
+		event.setLoggerName("name");
+		event.setLevel(Level.DEBUG);
+		event.setMessage("message");
+
+		final PutLogEventsResult result = new PutLogEventsResult();
+		result.setNextSequenceToken("ewopjfewfj");
+		expect(awsLogClient.putLogEvents(isA(PutLogEventsRequest.class))).andAnswer(new IAnswer<PutLogEventsResult>() {
+			@Override
+			public PutLogEventsResult answer() {
+				PutLogEventsRequest request = (PutLogEventsRequest) getCurrentArguments()[0];
+				assertEquals(logGroup, request.getLogGroupName());
+				assertEquals(expectedLogStream, request.getLogStreamName());
+				return result;
+			}
+		});
+		awsLogClient.shutdown();
+
+		// =====================================
+
+		replay(awsLogClient);
+		appender.start();
+		appender.append(event);
+		while (appender.getEventsWrittenCount() < 1) {
+			Thread.sleep(10);
+		}
+		appender.stop();
+		verify(awsLogClient);
+	}
 }
