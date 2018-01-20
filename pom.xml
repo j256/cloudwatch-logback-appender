@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.j256.cloudwatchlogbackappender</groupId>
 	<artifactId>cloudwatchlogbackappender</artifactId>
-	<version>1.11</version>
+	<version>1.11-SNAPSHOT</version>
 	<packaging>jar</packaging>
 	<name>Cloudwatch Logback Appender</name>
 	<url>https://github.com/j256/cloudwatch-logback-appender</url>
@@ -20,7 +20,7 @@
 		<version>5</version>
 	</parent>
 	<properties>
-		<disableDoclint />
+		<disableDoclint></disableDoclint>
 		<!-- optional dependencies -->
 		<logback.version>1.0.11</logback.version>
 		<aws-version>1.10.40</aws-version>
