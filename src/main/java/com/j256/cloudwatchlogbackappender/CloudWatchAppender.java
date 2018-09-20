@@ -47,6 +47,7 @@ import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.Layout;
 import ch.qos.logback.core.UnsynchronizedAppenderBase;
 import ch.qos.logback.core.spi.AppenderAttachable;
+import org.slf4j.MDC;
 
 /**
  * CloudWatch log appender for logback.
@@ -176,9 +177,13 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		Boolean stopped = stopMessagesThreadLocal.get();
 		if (stopped == null || !stopped) {
 			try {
-				if (loggingEvent instanceof LoggingEvent && ((LoggingEvent) loggingEvent).getThreadName() == null) {
-					// we need to do this so that the right thread gets set in the event
-					((LoggingEvent) loggingEvent).setThreadName(Thread.currentThread().getName());
+				if (loggingEvent instanceof LoggingEvent) {
+					LoggingEvent le = (LoggingEvent) loggingEvent;
+					if (le.getThreadName() == null) {
+						// we need to do this so that the right thread gets set in the event
+						((LoggingEvent) loggingEvent).setThreadName(Thread.currentThread().getName());
+					}
+					le.setMDCPropertyMap(MDC.getCopyOfContextMap());
 				}
 				if (!loggingEventQueue.offer(loggingEvent, maxQueueWaitTimeMillis, TimeUnit.MILLISECONDS)) {
 					if (emergencyAppender != null) {
