@@ -542,51 +542,22 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			if (name.indexOf('%') < 0) {
 				return name;
 			}
-			StringBuilder sb = new StringBuilder();
-			// NOTE: larger strings should be earlier in the array
-			String[][] patternValues = new String[][] { { "{instanceName}", instanceName }, //
-					{ "instanceName", instanceName }, //
-					{ "{instanceId}", instanceId }, //
-					{ "instanceId", instanceId }, //
-					{ "{instance}", instanceName }, //
-					{ "instance", instanceName }, //
-					{ "{iid}", instanceId }, //
-					{ "iid", instanceId }, //
-					{ "{in}", instanceName }, //
-					{ "in", instanceName }, //
-			};
-			// go through the name looking for %pattern that we can expand them
-			OUTER: for (int i = 0; i < name.length();) {
-				char ch = name.charAt(i);
-				i++;
-				if (ch != '%') {
-					sb.append(ch);
-					continue;
-				}
-				// run through pattern-values looking to see if the pattern is at this location, then insert value
-				for (String[] patternValue : patternValues) {
-					String pattern = patternValue[0];
-					if (isSubstringAtPosition(name, i, pattern)) {
-						sb.append(patternValue[1]);
-						i += pattern.length();
-						continue OUTER;
-					}
-				}
-				sb.append(ch);
-			}
-			return sb.toString();
-		}
-
-		private boolean isSubstringAtPosition(CharSequence cs, int pos, CharSequence substring) {
-			if (cs == null || cs.length() == 0) {
-				return false;
-			}
-			int max = pos + substring.length();
-			if (cs.length() < max) {
-				return false;
-			} else {
-				return cs.subSequence(pos, max).equals(substring);
-			}
+			/*
+			 * Little bit of a hack here. We use one of our layout instances to format the _name_ of the log-stream.
+			 * This allows us to support the same %token that are supported by the messages.
+			 */
+			Ec2PatternLayout nameLayout = new Ec2PatternLayout();
+			nameLayout.setPattern(name);
+			nameLayout.setContext(context);
+			nameLayout.start();
+			// somewhat random logging event although the time-stamp is important
+			LoggingEvent event = new LoggingEvent();
+			event.setLevel(Level.INFO);
+			event.setLoggerName("logStreamName");
+			event.setMessage("log stream name");
+			event.setTimeStamp(System.currentTimeMillis());
+			name = nameLayout.doLayout(event);
+			return name;
 		}
 
 		/**
