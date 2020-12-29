@@ -61,19 +61,47 @@ Minimal logback appender configuration:
 
 Cloudwatch unfortunately does not allow multiple hosts to write to the same log-stream.  If multiple servers are writing
 logs, you should configure the log-stream name with an instance-name suffix or something.  The `logStream` name setting
-supports the following tokens which expand into the instance-name: `%{instanceName}`, `%instanceName`, `%{instance}`,
-`%instance`, `%{in}`, and `%in`.  These expand into the instance-id: `%{instanceId}`, `%instanceId`, `%{iid}`, and
-`%iid`.  If the name is not available then the id will be used instead.  So you might want to use something like:
+uses the `Ec2PatternLayout` to generate the name, which can also be used to format your log lines.  This allows you to
+use the standard `%token` such as `%date` in the name of the log-stream – see the
+[logback documentation](http://logback.qos.ch/manual/layouts.html#conversionWord).  The `Ec2PatternLayout` class also
+adds support for additional tokens:
+
+| Property | Description |
+| -------- | ----------- |
+| `instanceName` | Name of the EC2 instance or ID if the name is not available. |
+| `instance` | Same as instanceName. |
+| `in` | Same as instanceName. |
+| `instanceId` | ID of the EC2 instance. |
+| `iid` | Same as instanceId. |
+| `uuid` | Random UUID as a string |
+| `hostName` | Name of the host from `InetAddress.getLocalHost()`. |
+| `host` | Same as hostName. |
+| `hostAddress` | IP address of the host from `InetAddress.getLocalHost()`. |
+| `address` | Same as hostAddress. |
+| `addr` | Same as hostAddress. |
+| `systemProperty` | Value of a system-property whose name is set as an {option}.  Ex: %systemProperty{os.version}`. |
+| `property` | Same as systemProperty. |
+| `prop` | Same as systemProperty. |
+| `systemEnviron` | Value of a environmental variable whose name is set as an {option}.  Ex: %systemEnviron{SHELL}`. |
+| `environ` | Same as systemEnviron. |
+| `env` | Same as systemEnviron. |
+
+For example:
 
 ``` xml
 	<logGroup>your-log-group-name-here</logGroup>
-	<logStream>general-%instance</logStream>
+	<logStream>general-%instance-%date{yyyyMMdd,UTC}-%uuid</logStream>
 ```
 
-Similar patterns are available in the log entries themselves if you use our `Ec2PatternLayout` class which adds support
-for the ec2 instance-name tag from the tokens `%instance`, `%instanceName`, and `%in`.  It also supports `%instanceId`
-and `%iid` for the instance-id as well.  If the instance-name is not available then the instance-id will be used for the
-name instead.
+This will generate a log-stream name with the prefix "general-" and then with the instance-name,
+date in UTC timezone, and a random UUID.
+
+**NOTE:** The instance-name and instance-id tokens will only work when running on an EC2 instance that
+supports the EC2MetadataUtils methods for looking up the information.  You can call
+`Ec2InstanceNameConverter.setInstanceName(...)` or `Ec2InstanceIdConverter.setInstanceId(...)` early in your
+program if you want to set them yourself. 
+
+The appender also adds the support for the previous list of % tokens to be expanded on each log line:
 
 ``` xml
 <appender name="CLOUDWATCH" class="com.j256.cloudwatchlogbackappender.CloudWatchAppender">

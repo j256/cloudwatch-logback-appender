@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory;
 
 public class CloudWatchAppenderRealTest {
 
-	@Ignore("Integration test to test going to cloudwatch")
+	@Ignore
 	@Test
 	public void test() throws InterruptedException {
 		Logger logger = LoggerFactory.getLogger(getClass());

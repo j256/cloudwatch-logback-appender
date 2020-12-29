@@ -16,5 +16,17 @@ public class Ec2PatternLayout extends PatternLayout {
 		defaultConverterMap.put("in", Ec2InstanceNameConverter.class.getName());
 		defaultConverterMap.put("instanceId", Ec2InstanceIdConverter.class.getName());
 		defaultConverterMap.put("iid", Ec2InstanceIdConverter.class.getName());
+		defaultConverterMap.put("uuid", UuidConverter.class.getName());
+		defaultConverterMap.put("hostName", HostNameConverter.class.getName());
+		defaultConverterMap.put("host", HostNameConverter.class.getName());
+		defaultConverterMap.put("hostAddress", HostAddressConverter.class.getName());
+		defaultConverterMap.put("address", HostAddressConverter.class.getName());
+		defaultConverterMap.put("addr", HostAddressConverter.class.getName());
+		defaultConverterMap.put("systemProperty", SystemPropertyConverter.class.getName());
+		defaultConverterMap.put("property", SystemPropertyConverter.class.getName());
+		defaultConverterMap.put("prop", SystemPropertyConverter.class.getName());
+		defaultConverterMap.put("systemEnviron", SystemEnvironConverter.class.getName());
+		defaultConverterMap.put("environ", SystemEnvironConverter.class.getName());
+		defaultConverterMap.put("env", SystemEnvironConverter.class.getName());
 	}
 }
