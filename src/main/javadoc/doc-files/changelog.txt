@@ -1,3 +1,6 @@
+2.0: 12/29/2020
+	* Render the log-stream name with the Ec2PatternLayout to support %date and other patterns.
+
 1.11: 1/20/2018
 	* Added instance-name and instance-id expansion into the log-stream name.   Thanks much to Johannes Röckert.
 	* Refined dependency documentation to just logs and ec2. Thanks to @RedXi and @m1schka.
