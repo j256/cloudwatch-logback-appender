@@ -17,6 +17,7 @@ import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.internal.StaticCredentialsProvider;
+import com.amazonaws.regions.Region;
 import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.amazonaws.services.ec2.model.DescribeTagsRequest;
@@ -71,9 +72,9 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	/** how many times to retry a cloudwatch request */
 	private static final int PUT_REQUEST_RETRY_COUNT = 2;
 	/** property looked for to find the aws access-key-id */
-	private static final String AWS_ACCESS_KEY_ID_PROPERTY = "cloudwatchappender.aws.accessKeyId";
+	public static final String AWS_ACCESS_KEY_ID_PROPERTY = "cloudwatchappender.aws.accessKeyId";
 	/** property looked for to find the aws secret-key */
-	private static final String AWS_SECRET_KEY_PROPERTY = "cloudwatchappender.aws.secretKey";
+	public static final String AWS_SECRET_KEY_PROPERTY = "cloudwatchappender.aws.secretKey";
 
 	private String accessKeyId;
 	private String secretKey;
@@ -415,7 +416,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 					stopMessagesThreadLocal.set(false);
 				}
 				if (exception != null) {
-					logError("Problems initializing cloudwatch writer", exception);
+					appendEvent(Level.ERROR, "Problems initializing cloudwatch writer", exception);
 				}
 			}
 
@@ -497,12 +498,17 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			} else {
 				credentialProvider = new StaticCredentialsProvider(new BasicAWSCredentials(accessKeyId, secretKey));
 			}
-			awsLogsClient = new AWSLogsClient(credentialProvider);
-			awsLogsClient.setRegion(RegionUtils.getRegion(region));
+			AWSLogsClient client = new AWSLogsClient(credentialProvider);
+			Region awsRegion = RegionUtils.getRegion(region);
+			if (awsRegion == null) {
+				throw new IllegalArgumentException("No region found for: " + region);
+			}
+			client.setRegion(awsRegion);
 			lookupInstanceName(credentialProvider);
 			logStreamName = buildLogStreamName();
 			verifyLogGroupExists();
 			verifyLogStreamExists();
+			awsLogsClient = client;
 		}
 
 		private void verifyLogGroupExists() {
@@ -516,7 +522,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			if (createLogDests) {
 				callLogClientMethod("createLogGroup", new CreateLogGroupRequest(logGroupName));
 			} else {
-				logWarn("Log-group '" + logGroupName + "' doesn't exist and not created", null);
+				appendEvent(Level.WARN, "Log-group '" + logGroupName + "' doesn't exist and not created", null);
 			}
 		}
 
@@ -533,7 +539,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			if (createLogDests) {
 				callLogClientMethod("createLogStream", new CreateLogStreamRequest(logGroupName, logStreamName));
 			} else {
-				logWarn("Log-stream '" + logStreamName + "' doesn't exist and not created", null);
+				appendEvent(Level.WARN, "Log-stream '" + logStreamName + "' doesn't exist and not created", null);
 			}
 		}
 
@@ -572,9 +578,12 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			try {
 				Method method = awsLogsClient.getClass().getMethod(methodName, arg.getClass());
 				method.invoke(awsLogsClient, arg);
-				logInfo("Created: " + arg);
+				appendEvent(Level.INFO, "Ran log client method " + methodName + ", arg " + arg, null);
 			} catch (Exception e) {
-				logError("Problems creating: " + arg, e);
+				if (emergencyAppender != null) {
+					emergencyAppender.addError("Problems running log-client method: " + methodName + ", arg: " + arg, e);
+				}
+				appendEvent(Level.ERROR, "Problems running log-client method: " + methodName + ", arg: " + arg, e);
 			}
 		}
 
@@ -600,9 +609,9 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 						return;
 					}
 				}
-				logInfo("Could not find EC2 instance name in tags: " + tags);
+				appendEvent(Level.INFO, "Could not find EC2 instance name in tags: " + tags, null);
 			} catch (AmazonServiceException ase) {
-				logWarn("Looking up EC2 instance-name threw", ase);
+				appendEvent(Level.WARN, "Looking up EC2 instance-name threw", ase);
 			} finally {
 				if (ec2Client != null) {
 					ec2Client.shutdown();
@@ -610,18 +619,6 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			}
 			// if we can't lookup the instance name then set it as the instance-id
 			Ec2InstanceNameConverter.setInstanceName(instanceId);
-		}
-
-		private void logInfo(String message) {
-			appendEvent(Level.INFO, message, null);
-		}
-
-		private void logWarn(String message, Throwable th) {
-			appendEvent(Level.WARN, message, th);
-		}
-
-		private void logError(String message, Throwable th) {
-			appendEvent(Level.ERROR, message, th);
 		}
 
 		private void appendEvent(Level level, String message, Throwable th) {

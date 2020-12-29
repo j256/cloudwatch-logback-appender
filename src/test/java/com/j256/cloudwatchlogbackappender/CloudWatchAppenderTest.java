@@ -30,8 +30,15 @@ import ch.qos.logback.classic.PatternLayout;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.spi.LoggingEvent;
 import ch.qos.logback.core.Appender;
+import ch.qos.logback.core.Context;
+import ch.qos.logback.core.LogbackException;
+import ch.qos.logback.core.filter.Filter;
+import ch.qos.logback.core.spi.FilterReply;
+import ch.qos.logback.core.status.Status;
 
 public class CloudWatchAppenderTest {
+
+	private final LoggerContext LOGGER_CONTEXT = new LoggerContext();
 
 	@Test(timeout = 5000)
 	public void testBasic() throws InterruptedException {
@@ -45,8 +52,9 @@ public class CloudWatchAppenderTest {
 		appender.setLogGroup(logGroup);
 		final String logStream = "pffqjfqjpoqoejpfqe";
 		appender.setLogStream(logStream);
+		appender.setContext(LOGGER_CONTEXT);
 		PatternLayout layout = new PatternLayout();
-		layout.setContext(new LoggerContext());
+		layout.setContext(LOGGER_CONTEXT);
 		layout.setPattern("[%thread] %level %logger{20} - %msg%n%xThrowable");
 		layout.start();
 		appender.setLayout(layout);
@@ -99,6 +107,7 @@ public class CloudWatchAppenderTest {
 	@Test(timeout = 5000)
 	public void testEmergencyAppender() throws InterruptedException {
 		CloudWatchAppender appender = new CloudWatchAppender();
+		appender.setInitialWaitTimeMillis(0);
 		AWSLogsClient awsLogClient = createMock(AWSLogsClient.class);
 		appender.setAwsLogsClient(awsLogClient);
 
@@ -108,8 +117,9 @@ public class CloudWatchAppenderTest {
 		appender.setLogGroup(logGroup);
 		final String logStream = "pffqjfqjpoqoejpfqe";
 		appender.setLogStream(logStream);
+		appender.setContext(LOGGER_CONTEXT);
 		PatternLayout layout = new PatternLayout();
-		layout.setContext(new LoggerContext());
+		layout.setContext(LOGGER_CONTEXT);
 		layout.setPattern("[%thread] %level %logger{20} - %msg%n%xThrowable");
 		layout.start();
 		appender.setLayout(layout);
@@ -125,7 +135,8 @@ public class CloudWatchAppenderTest {
 		final String threadName = Thread.currentThread().getName();
 
 		expect(awsLogClient.putLogEvents(isA(PutLogEventsRequest.class)))
-				.andThrow(new RuntimeException("force emergency log")).anyTimes();
+				.andThrow(new RuntimeException("force emergency log"))
+				.anyTimes();
 		awsLogClient.shutdown();
 
 		// =====================================
@@ -171,9 +182,52 @@ public class CloudWatchAppenderTest {
 		verify(awsLogClient, emergencyAppender);
 	}
 
+	@Test
+	public void testLogClientFailed() throws InterruptedException {
+		CloudWatchAppender appender = new CloudWatchAppender();
+		appender.setInitialWaitTimeMillis(0);
+
+		appender.setAccessKeyId("not right");
+		appender.setSecretKey("not right");
+		appender.setInitialWaitTimeMillis(0);
+
+		appender.setMaxBatchSize(1);
+		appender.setRegion("us-east-1");
+		final String logGroup = "pfqoejpfqe";
+		appender.setLogGroup(logGroup);
+		final String logStream = "pffqjfqjpoqoejpfqe";
+		appender.setLogStream(logStream);
+		appender.setContext(LOGGER_CONTEXT);
+		PatternLayout layout = new PatternLayout();
+		layout.setContext(LOGGER_CONTEXT);
+		layout.setPattern("[%thread] %level %logger{20} - %msg%n%xThrowable");
+		layout.start();
+		appender.setLayout(layout);
+		appender.setContext(LOGGER_CONTEXT);
+		appender.start();
+
+		LoggingEvent event = new LoggingEvent();
+		event.setTimeStamp(System.currentTimeMillis());
+		final String loggerName = "name";
+		event.setLoggerName(loggerName);
+		final Level level = Level.DEBUG;
+		event.setLevel(level);
+		String message = "fjpewjfpewjfpewjfepowf";
+		event.setMessage(message);
+
+		appender.append(event);
+		Thread.sleep(3000);
+		assertEquals(0, appender.getEventsWrittenCount());
+		appender.stop();
+	}
+
 	@Test(timeout = 5000)
 	public void testCoverage() {
 		CloudWatchAppender appender = new CloudWatchAppender();
+		appender.setInitialWaitTimeMillis(0);
+		appender.detachAndStopAllAppenders();
+		// stop before starting
+		appender.stop();
 		assertFalse(appender.isWarningMessagePrinted());
 		System.err.println("Expected warning on next line");
 		appender.append(null);
@@ -206,54 +260,130 @@ public class CloudWatchAppenderTest {
 		} catch (IllegalStateException ise) {
 			// expected
 		}
-	}
-
-	@Test(timeout = 5000)
-	public void testInstanceName() throws InterruptedException {
-		CloudWatchAppender appender = new CloudWatchAppender();
-		AWSLogsClient awsLogClient = createMock(AWSLogsClient.class);
-		appender.setAwsLogsClient(awsLogClient);
-
-		appender.setMaxBatchSize(1);
-		appender.setRegion("region");
-		final String logGroup = "pfqoejpfqe";
-		appender.setLogGroup(logGroup);
-		String prefix = "logstream-";
-		appender.setLogStream(prefix + "%instanceName");
-		final String expectedLogStream = prefix + "unknown";
 		PatternLayout layout = new PatternLayout();
-		layout.setPattern("%msg");
+		layout.setContext(LOGGER_CONTEXT);
+		layout.setPattern("x");
 		layout.start();
 		appender.setLayout(layout);
-
-		LoggingEvent event = new LoggingEvent();
-		event.setTimeStamp(System.currentTimeMillis());
-		event.setLoggerName("name");
-		event.setLevel(Level.DEBUG);
-		event.setMessage("message");
-
-		final PutLogEventsResult result = new PutLogEventsResult();
-		result.setNextSequenceToken("ewopjfewfj");
-		expect(awsLogClient.putLogEvents(isA(PutLogEventsRequest.class))).andAnswer(new IAnswer<PutLogEventsResult>() {
-			@Override
-			public PutLogEventsResult answer() {
-				PutLogEventsRequest request = (PutLogEventsRequest) getCurrentArguments()[0];
-				assertEquals(logGroup, request.getLogGroupName());
-				assertEquals(expectedLogStream, request.getLogStreamName());
-				return result;
-			}
-		});
-		awsLogClient.shutdown();
-
-		// =====================================
-
-		replay(awsLogClient);
-		appender.start();
-		appender.append(event);
-		while (appender.getEventsWrittenCount() < 1) {
-			Thread.sleep(10);
-		}
 		appender.stop();
-		verify(awsLogClient);
+
+		appender.setMaxBatchTimeMillis(1000);
+		appender.setMaxQueueWaitTimeMillis(1000);
+		appender.setInternalQueueSize(1);
+		appender.setCreateLogDests(true);
+
+		try {
+			appender.iteratorForAppenders();
+			fail("should have thrown");
+		} catch (UnsupportedOperationException uoe) {
+			// expected
+		}
+
+		assertNull(appender.getAppender("foo"));
+		assertNull(appender.getAppender(null));
+		assertNull(appender.getAppender(NullAppender.NAME));
+
+		// yes we are calling ourselves
+		NullAppender nullAppender = new NullAppender();
+		assertFalse(appender.detachAppender(nullAppender));
+		assertFalse(appender.detachAppender(NullAppender.NAME));
+		appender.addAppender(nullAppender);
+
+		assertNull(appender.getAppender("foo"));
+		assertNull(appender.getAppender(null));
+		assertSame(nullAppender, appender.getAppender(NullAppender.NAME));
+
+		appender.addAppender(new NullAppender());
+		assertTrue(appender.detachAppender(nullAppender));
+		appender.addAppender(new NullAppender());
+		assertFalse(appender.detachAppender("something"));
+		assertTrue(appender.detachAppender(NullAppender.NAME));
+		assertNull(appender.getAppender(NullAppender.NAME));
+	}
+
+	private static class NullAppender implements Appender<ILoggingEvent> {
+
+		public static final String NAME = "null-appender";
+
+		@Override
+		public void start() {
+		}
+
+		@Override
+		public void stop() {
+		}
+
+		@Override
+		public boolean isStarted() {
+			return false;
+		}
+
+		@Override
+		public void setContext(Context context) {
+		}
+
+		@Override
+		public Context getContext() {
+			return null;
+		}
+
+		@Override
+		public void addStatus(Status status) {
+		}
+
+		@Override
+		public void addInfo(String msg) {
+		}
+
+		@Override
+		public void addInfo(String msg, Throwable ex) {
+		}
+
+		@Override
+		public void addWarn(String msg) {
+		}
+
+		@Override
+		public void addWarn(String msg, Throwable ex) {
+		}
+
+		@Override
+		public void addError(String msg) {
+		}
+
+		@Override
+		public void addError(String msg, Throwable ex) {
+		}
+
+		@Override
+		public void addFilter(Filter<ILoggingEvent> newFilter) {
+		}
+
+		@Override
+		public void clearAllFilters() {
+		}
+
+		@Override
+		public List<Filter<ILoggingEvent>> getCopyOfAttachedFiltersList() {
+			return null;
+		}
+
+		@Override
+		public FilterReply getFilterChainDecision(ILoggingEvent event) {
+			return null;
+		}
+
+		@Override
+		public String getName() {
+			return NAME;
+		}
+
+		@Override
+		public void doAppend(ILoggingEvent event) throws LogbackException {
+		}
+
+		@Override
+		public void setName(String name) {
+		}
 	}
 }
