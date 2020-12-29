@@ -7,7 +7,6 @@ import static org.easymock.EasyMock.isA;
 import static org.easymock.EasyMock.replay;
 import static org.easymock.EasyMock.verify;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 import org.easymock.IAnswer;
 import org.junit.Test;
@@ -27,7 +26,6 @@ public class SystemEnvironConverterTest extends BaseConverterTest {
 
 		String envName = "SHELL";
 		String envValue = System.getenv(envName);
-		assertNotNull(envValue);
 
 		AWSLogsClient awsLogClient = createMock(AWSLogsClient.class);
 		appender.setAwsLogsClient(awsLogClient);
