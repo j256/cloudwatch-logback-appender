@@ -7,9 +7,12 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
+
+import org.slf4j.MDC;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.AmazonWebServiceRequest;
@@ -49,7 +52,6 @@ import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.Layout;
 import ch.qos.logback.core.UnsynchronizedAppenderBase;
 import ch.qos.logback.core.spi.AppenderAttachable;
-import org.slf4j.MDC;
 
 /**
  * CloudWatch log appender for logback.
@@ -189,9 +191,13 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 					LoggingEvent le = (LoggingEvent) loggingEvent;
 					if (le.getThreadName() == null) {
 						// we need to do this so that the right thread gets set in the event
-						((LoggingEvent) loggingEvent).setThreadName(Thread.currentThread().getName());
+						le.setThreadName(Thread.currentThread().getName());
 					}
-					le.setMDCPropertyMap(MDC.getCopyOfContextMap());
+					if (le.getMDCPropertyMap() == null) {
+						@SuppressWarnings("unchecked")
+						Map<String, String> map = MDC.getCopyOfContextMap();
+						le.setMDCPropertyMap(map);
+					}
 				}
 				String message = loggingEvent.getMessage();
 				if (message != null && message.length() > maxEventMessageSize) {
@@ -306,6 +312,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		this.maxEventMessageSize = maxEventMessageSize;
 	}
 
+	// not required, default is true
 	public void setTruncateEventMessages(boolean truncateEventMessages) {
 		this.truncateEventMessages = truncateEventMessages;
 	}
