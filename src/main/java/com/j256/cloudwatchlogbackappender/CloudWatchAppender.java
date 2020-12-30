@@ -554,30 +554,30 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			client.setRegion(awsRegion);
 			lookupInstanceName(credentialProvider);
 			logStreamName = buildLogStreamName();
-			verifyLogGroupExists();
-			verifyLogStreamExists();
+			verifyLogGroupExists(client);
+			verifyLogStreamExists(client);
 			awsLogsClient = client;
 		}
 
-		private void verifyLogGroupExists() {
+		private void verifyLogGroupExists(AWSLogsClient client) {
 			DescribeLogGroupsRequest request = new DescribeLogGroupsRequest().withLogGroupNamePrefix(logGroupName);
-			DescribeLogGroupsResult result = awsLogsClient.describeLogGroups(request);
+			DescribeLogGroupsResult result = client.describeLogGroups(request);
 			for (LogGroup group : result.getLogGroups()) {
 				if (logGroupName.equals(group.getLogGroupName())) {
 					return;
 				}
 			}
 			if (createLogDests) {
-				callLogClientMethod("createLogGroup", new CreateLogGroupRequest(logGroupName));
+				callLogClientMethod(client, "createLogGroup", new CreateLogGroupRequest(logGroupName));
 			} else {
 				appendEvent(Level.WARN, "Log-group '" + logGroupName + "' doesn't exist and not created", null);
 			}
 		}
 
-		private void verifyLogStreamExists() {
+		private void verifyLogStreamExists(AWSLogsClient client) {
 			DescribeLogStreamsRequest request = new DescribeLogStreamsRequest().withLogGroupName(logGroupName)
 					.withLogStreamNamePrefix(logStreamName);
-			DescribeLogStreamsResult result = awsLogsClient.describeLogStreams(request);
+			DescribeLogStreamsResult result = client.describeLogStreams(request);
 			for (LogStream stream : result.getLogStreams()) {
 				if (logStreamName.equals(stream.getLogStreamName())) {
 					sequenceToken = stream.getUploadSequenceToken();
@@ -585,7 +585,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 				}
 			}
 			if (createLogDests) {
-				callLogClientMethod("createLogStream", new CreateLogStreamRequest(logGroupName, logStreamName));
+				callLogClientMethod(client, "createLogStream", new CreateLogStreamRequest(logGroupName, logStreamName));
 			} else {
 				appendEvent(Level.WARN, "Log-stream '" + logStreamName + "' doesn't exist and not created", null);
 			}
@@ -622,10 +622,10 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		 * broke backwards compatibility and the applications would throw NoSuchMethodError. Using reflection causes the
 		 * linkage to be weaker and seems to work.
 		 */
-		private void callLogClientMethod(String methodName, AmazonWebServiceRequest arg) {
+		private void callLogClientMethod(AWSLogsClient client, String methodName, AmazonWebServiceRequest arg) {
 			try {
-				Method method = awsLogsClient.getClass().getMethod(methodName, arg.getClass());
-				method.invoke(awsLogsClient, arg);
+				Method method = client.getClass().getMethod(methodName, arg.getClass());
+				method.invoke(client, arg);
 				appendEvent(Level.INFO, "Ran log client method " + methodName + ", arg " + arg, null);
 			} catch (Exception e) {
 				if (emergencyAppender != null) {
