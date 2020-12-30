@@ -305,7 +305,6 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		this.testAmazonEc2Client = testAmazonEc2Client;
 	}
 
-	// not required, default is 256k
 	public void setMaxEventMessageSize(int maxEventMessageSize) {
 		this.maxEventMessageSize = maxEventMessageSize;
 	}
