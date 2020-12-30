@@ -81,6 +81,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	public static final String AWS_SECRET_KEY_PROPERTY = "cloudwatchappender.aws.secretKey";
 	public static final int DEFAULT_MAX_EVENT_MESSAGE_SIZE = 256 * 1024;
 	public static final boolean DEFAULT_TRUNCATE_EVENT_MESSAGES = true;
+	public static final boolean DEFAULT_COPY_EVENTS = true;
 
 	private String accessKeyId;
 	private String secretKey;
@@ -97,6 +98,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	private long initialWaitTimeMillis = DEFAULT_INITIAL_WAIT_TIME_MILLIS;
 	private int maxEventMessageSize = DEFAULT_MAX_EVENT_MESSAGE_SIZE;
 	private boolean truncateEventMessages = DEFAULT_TRUNCATE_EVENT_MESSAGES;
+	private boolean copyEvents = DEFAULT_COPY_EVENTS;
 
 	private AWSLogs awsLogsClient;
 	private AWSLogs testAwsLogsClient;
@@ -200,6 +202,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 					}
 				}
 				String message = loggingEvent.getMessage();
+				boolean copied = false;
 				if (message != null && message.length() > maxEventMessageSize) {
 					if (!truncateEventMessages) {
 						// we can't truncate so then bail
@@ -208,21 +211,15 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 					}
 					message = message.substring(0, maxEventMessageSize);
 					// we copy all of the fields over but with the truncated message
-					LoggingEvent truncatedEvent = new LoggingEvent();
-					truncatedEvent.setArgumentArray(loggingEvent.getArgumentArray());
-					truncatedEvent.setLevel(loggingEvent.getLevel());
-					truncatedEvent.setLoggerContextRemoteView(loggingEvent.getLoggerContextVO());
-					truncatedEvent.setLoggerName(loggingEvent.getLoggerName());
-					truncatedEvent.setMarker(loggingEvent.getMarker());
-					truncatedEvent.setMDCPropertyMap(loggingEvent.getMDCPropertyMap());
-					truncatedEvent.setMessage(message);
-					truncatedEvent.setThreadName(loggingEvent.getThreadName());
-					IThrowableProxy ithrowableProxy = loggingEvent.getThrowableProxy();
-					if (ithrowableProxy instanceof ThrowableProxy) {
-						truncatedEvent.setThrowableProxy((ThrowableProxy) ithrowableProxy);
-					}
-					truncatedEvent.setTimeStamp(loggingEvent.getTimeStamp());
-					loggingEvent = truncatedEvent;
+					loggingEvent = copyEvent(loggingEvent, message);
+					copied = true;
+				}
+				/*
+				 * Since we are writing the event out in another thread, the default is to copy the event into our
+				 * internal queue for transmission.
+				 */
+				if (copyEvents && !copied) {
+					loggingEvent = copyEvent(loggingEvent, null);
 				}
 				if (!loggingEventQueue.offer(loggingEvent, maxQueueWaitTimeMillis, TimeUnit.MILLISECONDS)) {
 					appendToEmergencyAppender(loggingEvent);
@@ -308,6 +305,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		this.testAmazonEc2Client = testAmazonEc2Client;
 	}
 
+	// not required, default is 256k
 	public void setMaxEventMessageSize(int maxEventMessageSize) {
 		this.maxEventMessageSize = maxEventMessageSize;
 	}
@@ -315,6 +313,11 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	// not required, default is true
 	public void setTruncateEventMessages(boolean truncateEventMessages) {
 		this.truncateEventMessages = truncateEventMessages;
+	}
+
+	// not required, default is true
+	public void setCopyEvents(boolean copyEvents) {
+		this.copyEvents = copyEvents;
 	}
 
 	// for testing purposes
@@ -382,6 +385,31 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		} else {
 			return false;
 		}
+	}
+
+	/**
+	 * Copy the event fields possible replacing the message if not null.
+	 */
+	private LoggingEvent copyEvent(ILoggingEvent loggingEvent, String message) {
+		LoggingEvent newEvent = new LoggingEvent();
+		newEvent.setArgumentArray(loggingEvent.getArgumentArray());
+		newEvent.setLevel(loggingEvent.getLevel());
+		newEvent.setLoggerContextRemoteView(loggingEvent.getLoggerContextVO());
+		newEvent.setLoggerName(loggingEvent.getLoggerName());
+		newEvent.setMarker(loggingEvent.getMarker());
+		newEvent.setMDCPropertyMap(loggingEvent.getMDCPropertyMap());
+		if (message == null) {
+			newEvent.setMessage(loggingEvent.getMessage());
+		} else {
+			newEvent.setMessage(message);
+		}
+		newEvent.setThreadName(loggingEvent.getThreadName());
+		IThrowableProxy ithrowableProxy = loggingEvent.getThrowableProxy();
+		if (ithrowableProxy instanceof ThrowableProxy) {
+			newEvent.setThrowableProxy((ThrowableProxy) ithrowableProxy);
+		}
+		newEvent.setTimeStamp(loggingEvent.getTimeStamp());
+		return newEvent;
 	}
 
 	private void appendToEmergencyAppender(ILoggingEvent event) {
