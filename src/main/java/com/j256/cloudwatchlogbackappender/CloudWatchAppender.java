@@ -187,10 +187,33 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 					// we need to do this so that the right thread gets set in the event
 					((LoggingEvent) loggingEvent).setThreadName(Thread.currentThread().getName());
 				}
-				if (!loggingEventQueue.offer(loggingEvent, maxQueueWaitTimeMillis, TimeUnit.MILLISECONDS)) {
-					if (emergencyAppender != null) {
-						emergencyAppender.doAppend(loggingEvent);
+				String message = loggingEvent.getMessage();
+				if (message != null && message.length() > maxEventMessageSize) {
+					if (!truncateEventMessages) {
+						// we can't truncate so then bail
+						appendToEmergencyAppender(loggingEvent);
+						return;
 					}
+					message = message.substring(0, maxEventMessageSize);
+					// we copy all of the fields over but with the truncated message
+					LoggingEvent truncatedEvent = new LoggingEvent();
+					truncatedEvent.setArgumentArray(loggingEvent.getArgumentArray());
+					truncatedEvent.setLevel(loggingEvent.getLevel());
+					truncatedEvent.setLoggerContextRemoteView(loggingEvent.getLoggerContextVO());
+					truncatedEvent.setLoggerName(loggingEvent.getLoggerName());
+					truncatedEvent.setMarker(loggingEvent.getMarker());
+					truncatedEvent.setMDCPropertyMap(loggingEvent.getMDCPropertyMap());
+					truncatedEvent.setMessage(message);
+					truncatedEvent.setThreadName(loggingEvent.getThreadName());
+					IThrowableProxy ithrowableProxy = loggingEvent.getThrowableProxy();
+					if (ithrowableProxy instanceof ThrowableProxy) {
+						truncatedEvent.setThrowableProxy((ThrowableProxy) ithrowableProxy);
+					}
+					truncatedEvent.setTimeStamp(loggingEvent.getTimeStamp());
+					loggingEvent = truncatedEvent;
+				}
+				if (!loggingEventQueue.offer(loggingEvent, maxQueueWaitTimeMillis, TimeUnit.MILLISECONDS)) {
+					appendToEmergencyAppender(loggingEvent);
 				}
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
@@ -338,14 +361,34 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		}
 	}
 
+	private void appendToEmergencyAppender(ILoggingEvent event) {
+		if (emergencyAppender != null) {
+			try {
+				emergencyAppender.doAppend(event);
+			} catch (Exception e) {
+				// oh well, we tried
+			}
+		}
+	}
+
+	private void appendToEmergencyAppender(List<ILoggingEvent> events) {
+		if (emergencyAppender != null) {
+			try {
+				for (ILoggingEvent event : events) {
+					emergencyAppender.doAppend(event);
+				}
+			} catch (Exception e) {
+				// oh well, we tried
+			}
+		}
+	}
+
 	/**
 	 * Background thread that writes the log events to cloudwatch.
 	 */
 	private class CloudWatchWriter implements Runnable {
 
 		private String sequenceToken;
-		private String instanceId = "unknown";
-		private String instanceName = "unknown";
 		private String logStreamName;
 		private boolean initialized;
 
@@ -416,7 +459,10 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 				}
 			}
 
-			// now clear the queue and write all the rest
+			/*
+			 * We have been interrupted so write all of the rest of the events and then quit
+			 */
+
 			events.clear();
 			while (true) {
 				ILoggingEvent event = loggingEventQueue.poll();
@@ -434,6 +480,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 				writeEvents(events);
 				events.clear();
 			}
+			// thread quits here
 		}
 
 		private void writeEvents(List<ILoggingEvent> events) {
@@ -512,28 +559,6 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			}
 		}
 
-		private void appendToEmergencyAppender(List<ILoggingEvent> events) {
-			if (emergencyAppender != null) {
-				try {
-					for (ILoggingEvent event : events) {
-						emergencyAppender.doAppend(event);
-					}
-				} catch (Exception e) {
-					// oh well, we tried
-				}
-			}
-		}
-
-		private void appendToEmergencyAppender(ILoggingEvent event) {
-			if (emergencyAppender != null) {
-				try {
-					emergencyAppender.doAppend(event);
-				} catch (Exception e) {
-					// oh well, we tried
-				}
-			}
-		}
-
 		private void createLogsClient() {
 			AWSCredentialsProvider credentialProvider;
 			if (MiscUtils.isBlank(accessKeyId)) {
@@ -549,7 +574,11 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			}
 			AWSLogs client =
 					AWSLogsClientBuilder.standard().withCredentials(credentialProvider).withRegion(region).build();
-			lookupInstanceName(credentialProvider);
+			try {
+				lookupInstanceName(credentialProvider);
+			} catch (Exception e) {
+				appendEvent(Level.ERROR, "Problems looking up instance-name", e);
+			}
 			logStreamName = buildLogStreamName();
 			verifyLogGroupExists(client);
 			verifyLogStreamExists(client);
@@ -634,7 +663,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		}
 
 		private void lookupInstanceName(AWSCredentialsProvider credentialProvider) {
-			instanceId = EC2MetadataUtils.getInstanceId();
+			String instanceId = EC2MetadataUtils.getInstanceId();
 			if (instanceId == null) {
 				return;
 			}
@@ -652,7 +681,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 				List<TagDescription> tags = result.getTags();
 				for (TagDescription tag : tags) {
 					if ("Name".equals(tag.getKey())) {
-						instanceName = tag.getValue();
+						String instanceName = tag.getValue();
 						Ec2InstanceNameConverter.setInstanceName(instanceName);
 						return;
 					}
