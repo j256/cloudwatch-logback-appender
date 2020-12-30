@@ -118,8 +118,8 @@ Here is the complete list of the appender properties.
 | `region` | *string* | AWS region needed by CloudWatch API |
 | `logGroup` | *string* | Log group name |
 | `logStream` | *string* | Log stream name |
-| `accessKeyId` | *string* | **Default: none, code will use ```DefaultAWSCredentialsProviderChain```** <br /> AWS API access key ID, see AWS Permissions below |
-| `secretKey` | *string* | **Default: none, code will use ```DefaultAWSCredentialsProviderChain```** <br /> AWS API secret key, see AWS Permissions below |
+| `accessKeyId` | *string* | **Default: none, code will use ```DefaultAWSCredentialsProviderChain```** <br /> AWS API access key ID, see AWS Permissions below. |
+| `secretKey` | *string* | **Default: none, code will use ```DefaultAWSCredentialsProviderChain```** <br /> AWS API secret key, see AWS Permissions below. |
 | `maxBatchSize` | *int* | **Default: 128**<br/>Maximum number of log events put into CloudWatch in single request. |
 | `maxBatchTimeMillis` | *long* | **Default: 5000**<br/>Maximum time in milliseconds to collect log events to submit batch. |
 | `maxQueueWaitTimeMillis` | *long* | **Default: 100**<br/>Maximum time in milliseconds to wait if internal queue is full before using the emergency appender (see below). |
@@ -128,6 +128,7 @@ Here is the complete list of the appender properties.
 | `createLogDests` | *boolean* | **Default: true**<br/>Create the CloudWatch log and stream if they don't exist. |
 | `maxEventMessageSize` | *int* | **Default: 256k**<br/>Maximum size of event message before it is truncated or sent to emergency appender. |
 | `truncateEventMessages` | *boolean* | **Default: true**<br/>If an event it too large, should the message be truncated.  If false then it will be sent to emergency appender. |
+| `copyEvents` | *boolean* | **Default: true**<br/>Copies the event for logging by the background thread. |
 
 ## Emergency Appender
 
