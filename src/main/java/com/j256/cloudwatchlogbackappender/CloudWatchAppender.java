@@ -7,12 +7,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
-
-import org.slf4j.MDC;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.AmazonWebServiceRequest;
@@ -82,6 +79,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	public static final int DEFAULT_MAX_EVENT_MESSAGE_SIZE = 256 * 1024;
 	public static final boolean DEFAULT_TRUNCATE_EVENT_MESSAGES = true;
 	public static final boolean DEFAULT_COPY_EVENTS = true;
+	public static final boolean DEFAULT_PRINT_REJECTED_EVENTS = false;
 
 	private String accessKeyId;
 	private String secretKey;
@@ -99,6 +97,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	private int maxEventMessageSize = DEFAULT_MAX_EVENT_MESSAGE_SIZE;
 	private boolean truncateEventMessages = DEFAULT_TRUNCATE_EVENT_MESSAGES;
 	private boolean copyEvents = DEFAULT_COPY_EVENTS;
+	private boolean printRejectedEvents = DEFAULT_PRINT_REJECTED_EVENTS;
 
 	private AWSLogs awsLogsClient;
 	private AWSLogs testAwsLogsClient;
@@ -179,7 +178,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		// check wiring
 		if (loggingEventQueue == null) {
 			if (!warningMessagePrinted) {
-				System.err.println(getClass().getSimpleName() + " not wired correctly, ignoring all log messages");
+				System.err.println(getClass().getSimpleName() + " not started correctly, ignoring all log messages");
 				warningMessagePrinted = true;
 			}
 			return;
@@ -187,46 +186,41 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 
 		// skip it if we just went recursive
 		Boolean stopped = stopMessagesThreadLocal.get();
-		if (stopped == null || !stopped) {
-			try {
-				if (loggingEvent instanceof LoggingEvent) {
-					LoggingEvent le = (LoggingEvent) loggingEvent;
-					if (le.getThreadName() == null) {
-						// we need to do this so that the right thread gets set in the event
-						le.setThreadName(Thread.currentThread().getName());
-					}
-					if (le.getMDCPropertyMap() == null) {
-						@SuppressWarnings("unchecked")
-						Map<String, String> map = MDC.getCopyOfContextMap();
-						le.setMDCPropertyMap(map);
-					}
-				}
-				String message = loggingEvent.getMessage();
-				boolean copied = false;
-				if (message != null && message.length() > maxEventMessageSize) {
-					if (!truncateEventMessages) {
-						// we can't truncate so then bail
-						appendToEmergencyAppender(loggingEvent);
-						return;
-					}
-					message = message.substring(0, maxEventMessageSize);
-					// we copy all of the fields over but with the truncated message
-					loggingEvent = copyEvent(loggingEvent, message);
-					copied = true;
-				}
-				/*
-				 * Since we are writing the event out in another thread, the default is to copy the event into our
-				 * internal queue for transmission.
-				 */
-				if (copyEvents && !copied) {
-					loggingEvent = copyEvent(loggingEvent, null);
-				}
-				if (!loggingEventQueue.offer(loggingEvent, maxQueueWaitTimeMillis, TimeUnit.MILLISECONDS)) {
-					appendToEmergencyAppender(loggingEvent);
-				}
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
+		if (stopped != null && stopped) {
+			return;
+		}
+
+		String message = loggingEvent.getMessage();
+		boolean copied = false;
+		if (message != null && message.length() > maxEventMessageSize) {
+			if (!truncateEventMessages) {
+				// if the message us too big and we can't truncate it then just write it to the emergency appender
+				appendToEmergencyAppender(loggingEvent);
+				return;
 			}
+			// we copy all of the fields over but with the truncated message
+			loggingEvent = copyEvent(loggingEvent, message.substring(0, maxEventMessageSize));
+			copied = true;
+		}
+		/*
+		 * Since we are writing the event out in another thread, the default is to copy the event into our internal
+		 * queue for transmission.
+		 */
+		if (!copied) {
+			if (copyEvents) {
+				loggingEvent = copyEvent(loggingEvent, null);
+			} else {
+				loggingEvent.prepareForDeferredProcessing();
+			}
+		}
+
+		try {
+			if (!loggingEventQueue.offer(loggingEvent, maxQueueWaitTimeMillis, TimeUnit.MILLISECONDS)) {
+				appendToEmergencyAppender(loggingEvent);
+			}
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			appendToEmergencyAppender(loggingEvent);
 		}
 	}
 
@@ -317,6 +311,11 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	// not required, default is true
 	public void setCopyEvents(boolean copyEvents) {
 		this.copyEvents = copyEvents;
+	}
+
+	// not required, default is false
+	public void setPrintRejectedEvents(boolean printRejectedEvents) {
+		this.printRejectedEvents = printRejectedEvents;
 	}
 
 	// for testing purposes
@@ -415,21 +414,24 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		if (emergencyAppender != null) {
 			try {
 				emergencyAppender.doAppend(event);
-			} catch (Exception e) {
+				return;
+			} catch (Exception outer) {
+				// fall through and maybe print below
+			}
+		}
+		if (printRejectedEvents) {
+			try {
+				System.err.println(getClass().getSimpleName() + " emergency appender didn't handle event: "
+						+ layout.doLayout(event));
+			} catch (Exception inner) {
 				// oh well, we tried
 			}
 		}
 	}
 
 	private void appendToEmergencyAppender(List<ILoggingEvent> events) {
-		if (emergencyAppender != null) {
-			try {
-				for (ILoggingEvent event : events) {
-					emergencyAppender.doAppend(event);
-				}
-			} catch (Exception e) {
-				// oh well, we tried
-			}
+		for (ILoggingEvent event : events) {
+			appendToEmergencyAppender(event);
 		}
 	}
 

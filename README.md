@@ -129,6 +129,7 @@ Here is the complete list of the appender properties.
 | `maxEventMessageSize` | *int* | 256k | Maximum size of event message before it is truncated or sent to emergency appender. |
 | `truncateEventMessages` | *boolean* | true | If an event it too large, should the message be truncated.  If false then it will be sent to emergency appender. |
 | `copyEvents` | *boolean* | true | Copies the event for logging by the background thread. |
+| `printRejectedEvents` | *boolean* | false | Print any rejected events to stderr if the emergency appender doesn't work. |
 
 ## Emergency Appender
 
