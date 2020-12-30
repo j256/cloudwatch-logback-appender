@@ -4,6 +4,7 @@
 	* Added support for the handling of event messages larger than 256k.  Thanks to @fs-aikito and @alexvanacker.
 	* Fixed event race conditions by adding copyEvents setting (default true).  Thanks to @fs-aikito. 
 	* Added printRejectedEvents config setting for sending failed events to stderr.
+	* Moved to requiring java 7.
 
 1.11: 1/20/2018
 	* Added instance-name and instance-id expansion into the log-stream name.   Thanks much to Johannes Röckert.
