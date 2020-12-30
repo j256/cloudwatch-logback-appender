@@ -10,7 +10,7 @@ public abstract class BaseConverterTest {
 
 	{
 		appender.setMaxBatchSize(1);
-		appender.setMaxBatchSize(1);
+		appender.setMaxBatchTimeMillis(0);
 		appender.setRegion("region");
 		appender.setContext(LOGGER_CONTEXT);
 		appender.setLogGroup(LOG_GROUP);
