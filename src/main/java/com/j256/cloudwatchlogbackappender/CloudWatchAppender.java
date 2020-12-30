@@ -24,7 +24,6 @@ import com.amazonaws.services.ec2.model.DescribeTagsResult;
 import com.amazonaws.services.ec2.model.Filter;
 import com.amazonaws.services.ec2.model.TagDescription;
 import com.amazonaws.services.logs.AWSLogs;
-import com.amazonaws.services.logs.AWSLogsClient;
 import com.amazonaws.services.logs.AWSLogsClientBuilder;
 import com.amazonaws.services.logs.model.CreateLogGroupRequest;
 import com.amazonaws.services.logs.model.CreateLogStreamRequest;
@@ -97,6 +96,8 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	private boolean truncateEventMessages = DEFAULT_TRUNCATE_EVENT_MESSAGES;
 
 	private AWSLogs awsLogsClient;
+	private AWSLogs testAwsLogsClient;
+	private AmazonEC2 testAmazonEc2Client;
 	private long eventsWrittenCount;
 
 	private BlockingQueue<ILoggingEvent> loggingEventQueue;
@@ -282,8 +283,18 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	}
 
 	// not required, for testing purposes
-	void setAwsLogsClient(AWSLogsClient awsLogsClient) {
+	void setAwsLogsClient(AWSLogs awsLogsClient) {
 		this.awsLogsClient = awsLogsClient;
+	}
+
+	// not required, for testing purposes
+	void setTestAwsLogsClient(AWSLogs testAwsLogsClient) {
+		this.testAwsLogsClient = testAwsLogsClient;
+	}
+
+	// not required, for testing purposes
+	void setTestAmazonEc2Client(AmazonEC2 testAmazonEc2Client) {
+		this.testAmazonEc2Client = testAmazonEc2Client;
 	}
 
 	public void setMaxEventMessageSize(int maxEventMessageSize) {
@@ -422,31 +433,6 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 						// wait timed out
 						break;
 					}
-					String message = loggingEvent.getMessage();
-					if (message != null && message.length() > maxEventMessageSize) {
-						if (!truncateEventMessages) {
-							// we can't truncate so then bail
-							appendToEmergencyAppender(loggingEvent);
-							continue;
-						}
-						message = message.substring(0, maxEventMessageSize);
-						// we copy all of the fields over but with the truncated message
-						LoggingEvent truncatedEvent = new LoggingEvent();
-						truncatedEvent.setArgumentArray(loggingEvent.getArgumentArray());
-						truncatedEvent.setLevel(loggingEvent.getLevel());
-						truncatedEvent.setLoggerContextRemoteView(loggingEvent.getLoggerContextVO());
-						truncatedEvent.setLoggerName(loggingEvent.getLoggerName());
-						truncatedEvent.setMarker(loggingEvent.getMarker());
-						truncatedEvent.setMDCPropertyMap(loggingEvent.getMDCPropertyMap());
-						truncatedEvent.setMessage(message);
-						truncatedEvent.setThreadName(loggingEvent.getThreadName());
-						IThrowableProxy ithrowableProxy = loggingEvent.getThrowableProxy();
-						if (ithrowableProxy instanceof ThrowableProxy) {
-							truncatedEvent.setThrowableProxy((ThrowableProxy) ithrowableProxy);
-						}
-						truncatedEvent.setTimeStamp(loggingEvent.getTimeStamp());
-						loggingEvent = truncatedEvent;
-					}
 					events.add(loggingEvent);
 					if (events.size() >= maxBatchSize) {
 						// batch size exceeded
@@ -572,8 +558,12 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			} else {
 				credentialProvider = new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessKeyId, secretKey));
 			}
-			AWSLogs client =
-					AWSLogsClientBuilder.standard().withCredentials(credentialProvider).withRegion(region).build();
+			AWSLogs client;
+			if (testAwsLogsClient == null) {
+				client = AWSLogsClientBuilder.standard().withCredentials(credentialProvider).withRegion(region).build();
+			} else {
+				client = testAwsLogsClient;
+			}
 			try {
 				lookupInstanceName(credentialProvider);
 			} catch (Exception e) {
@@ -670,10 +660,14 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			Ec2InstanceIdConverter.setInstanceId(instanceId);
 			AmazonEC2 ec2Client = null;
 			try {
-				ec2Client = AmazonEC2ClientBuilder.standard()
-						.withCredentials(credentialProvider)
-						.withRegion(region)
-						.build();
+				if (testAmazonEc2Client == null) {
+					ec2Client = AmazonEC2ClientBuilder.standard()
+							.withCredentials(credentialProvider)
+							.withRegion(region)
+							.build();
+				} else {
+					ec2Client = testAmazonEc2Client;
+				}
 				DescribeTagsRequest request = new DescribeTagsRequest();
 				request.setFilters(Arrays.asList(new Filter("resource-type").withValues("instance"),
 						new Filter("resource-id").withValues(instanceId)));
