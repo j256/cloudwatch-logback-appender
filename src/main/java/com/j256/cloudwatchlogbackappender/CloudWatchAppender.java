@@ -14,17 +14,18 @@ import java.util.concurrent.TimeUnit;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.AmazonWebServiceRequest;
 import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
-import com.amazonaws.internal.StaticCredentialsProvider;
-import com.amazonaws.regions.Region;
-import com.amazonaws.regions.RegionUtils;
-import com.amazonaws.services.ec2.AmazonEC2Client;
+import com.amazonaws.services.ec2.AmazonEC2;
+import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
 import com.amazonaws.services.ec2.model.DescribeTagsRequest;
 import com.amazonaws.services.ec2.model.DescribeTagsResult;
 import com.amazonaws.services.ec2.model.Filter;
 import com.amazonaws.services.ec2.model.TagDescription;
+import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.AWSLogsClient;
+import com.amazonaws.services.logs.AWSLogsClientBuilder;
 import com.amazonaws.services.logs.model.CreateLogGroupRequest;
 import com.amazonaws.services.logs.model.CreateLogStreamRequest;
 import com.amazonaws.services.logs.model.DataAlreadyAcceptedException;
@@ -95,7 +96,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	private int maxEventMessageSize = DEFAULT_MAX_EVENT_MESSAGE_SIZE;
 	private boolean truncateEventMessages = DEFAULT_TRUNCATE_EVENT_MESSAGES;
 
-	private AWSLogsClient awsLogsClient;
+	private AWSLogs awsLogsClient;
 	private long eventsWrittenCount;
 
 	private BlockingQueue<ILoggingEvent> loggingEventQueue;
@@ -544,14 +545,10 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 				// if we are still blank then use the default credentials provider
 				credentialProvider = new DefaultAWSCredentialsProviderChain();
 			} else {
-				credentialProvider = new StaticCredentialsProvider(new BasicAWSCredentials(accessKeyId, secretKey));
+				credentialProvider = new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessKeyId, secretKey));
 			}
-			AWSLogsClient client = new AWSLogsClient(credentialProvider);
-			Region awsRegion = RegionUtils.getRegion(region);
-			if (awsRegion == null) {
-				throw new IllegalArgumentException("No region found for: " + region);
-			}
-			client.setRegion(awsRegion);
+			AWSLogs client =
+					AWSLogsClientBuilder.standard().withCredentials(credentialProvider).withRegion(region).build();
 			lookupInstanceName(credentialProvider);
 			logStreamName = buildLogStreamName();
 			verifyLogGroupExists(client);
@@ -559,7 +556,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			awsLogsClient = client;
 		}
 
-		private void verifyLogGroupExists(AWSLogsClient client) {
+		private void verifyLogGroupExists(AWSLogs client) {
 			DescribeLogGroupsRequest request = new DescribeLogGroupsRequest().withLogGroupNamePrefix(logGroupName);
 			DescribeLogGroupsResult result = client.describeLogGroups(request);
 			for (LogGroup group : result.getLogGroups()) {
@@ -574,7 +571,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			}
 		}
 
-		private void verifyLogStreamExists(AWSLogsClient client) {
+		private void verifyLogStreamExists(AWSLogs client) {
 			DescribeLogStreamsRequest request = new DescribeLogStreamsRequest().withLogGroupName(logGroupName)
 					.withLogStreamNamePrefix(logStreamName);
 			DescribeLogStreamsResult result = client.describeLogStreams(request);
@@ -622,7 +619,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		 * broke backwards compatibility and the applications would throw NoSuchMethodError. Using reflection causes the
 		 * linkage to be weaker and seems to work.
 		 */
-		private void callLogClientMethod(AWSLogsClient client, String methodName, AmazonWebServiceRequest arg) {
+		private void callLogClientMethod(AWSLogs client, String methodName, AmazonWebServiceRequest arg) {
 			try {
 				Method method = client.getClass().getMethod(methodName, arg.getClass());
 				method.invoke(client, arg);
@@ -642,10 +639,12 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 				return;
 			}
 			Ec2InstanceIdConverter.setInstanceId(instanceId);
-			AmazonEC2Client ec2Client = null;
+			AmazonEC2 ec2Client = null;
 			try {
-				ec2Client = new AmazonEC2Client(credentialProvider);
-				ec2Client.setRegion(RegionUtils.getRegion(region));
+				ec2Client = AmazonEC2ClientBuilder.standard()
+						.withCredentials(credentialProvider)
+						.withRegion(region)
+						.build();
 				DescribeTagsRequest request = new DescribeTagsRequest();
 				request.setFilters(Arrays.asList(new Filter("resource-type").withValues("instance"),
 						new Filter("resource-id").withValues(instanceId)));
