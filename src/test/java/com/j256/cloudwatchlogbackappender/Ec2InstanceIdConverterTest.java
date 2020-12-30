@@ -21,7 +21,7 @@ import ch.qos.logback.classic.spi.LoggingEvent;
 
 public class Ec2InstanceIdConverterTest extends BaseConverterTest {
 
-	@Test(timeout = 5000)
+	@Test(timeout = 10000)
 	public void testInstanceId() throws InterruptedException {
 
 		String instanceId = "fewhwehpewpf";
@@ -70,7 +70,7 @@ public class Ec2InstanceIdConverterTest extends BaseConverterTest {
 		verify(awsLogClient);
 	}
 
-	@Test(timeout = 5000)
+	@Test(timeout = 10000)
 	public void testInstanceNameUnknown() throws InterruptedException {
 
 		Ec2InstanceIdConverter.setInstanceId(null);

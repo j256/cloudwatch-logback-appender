@@ -21,7 +21,7 @@ import ch.qos.logback.classic.spi.LoggingEvent;
 
 public class Ec2InstanceNameConverterTest extends BaseConverterTest {
 
-	@Test(timeout = 5000)
+	@Test(timeout = 10000)
 	public void testInstanceName() throws InterruptedException {
 
 		String instanceName = "jefwjpefwjewfp";
@@ -70,7 +70,7 @@ public class Ec2InstanceNameConverterTest extends BaseConverterTest {
 		verify(awsLogClient);
 	}
 
-	@Test(timeout = 5000)
+	@Test(timeout = 10000)
 	public void testInstanceNameUnknown() throws InterruptedException {
 
 		Ec2InstanceNameConverter.setInstanceName(null);

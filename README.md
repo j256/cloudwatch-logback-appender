@@ -126,6 +126,8 @@ Here is the complete list of the appender properties.
 | `initialWaitTimeMillis` | *long* | **Default: 0**<br/>Initial wait time before logging messages.  Helps if server needs to configure itself initially. |
 | `internalQueueSize` | *int* | **Default: 8192**<br/>Size of the internal log event queue. |
 | `createLogDests` | *boolean* | **Default: true**<br/>Create the CloudWatch log and stream if they don't exist. |
+| `maxEventMessageSize` | *int* | **Default: 256k**<br/>Maximum size of event message before it is truncated or sent to emergency appender. |
+| `truncateEventMessages` | *boolean* | **Default: true**<br/>If an event it too large, should the message be truncated.  If false then it will be sent to emergency appender. |
 
 ## Emergency Appender
 

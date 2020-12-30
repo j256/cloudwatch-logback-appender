@@ -1,6 +1,7 @@
 2.0: 12/29/2020
 	* Render the log-stream name with the Ec2PatternLayout to support %date and other patterns.
 	* Added %uuid, %hostName, %hostAddress, %systemProperty, and %systemEnviron layout patterns.
+	* Added support for the handling of event messages larger than 256k.  Thanks to @fs-aikito and @alexvanacker. 
 	* Fleshed out the unit tests.
 
 1.11: 1/20/2018

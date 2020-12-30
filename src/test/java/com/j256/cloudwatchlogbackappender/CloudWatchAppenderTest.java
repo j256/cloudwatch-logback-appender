@@ -40,7 +40,7 @@ public class CloudWatchAppenderTest {
 
 	private final LoggerContext LOGGER_CONTEXT = new LoggerContext();
 
-	@Test(timeout = 5000)
+	@Test(timeout = 10000)
 	public void testBasic() throws InterruptedException {
 		CloudWatchAppender appender = new CloudWatchAppender();
 		AWSLogsClient awsLogClient = createMock(AWSLogsClient.class);
@@ -104,7 +104,7 @@ public class CloudWatchAppenderTest {
 		verify(awsLogClient);
 	}
 
-	@Test(timeout = 5000)
+	@Test(timeout = 10000)
 	public void testEmergencyAppender() throws InterruptedException {
 		CloudWatchAppender appender = new CloudWatchAppender();
 		appender.setInitialWaitTimeMillis(0);
@@ -182,7 +182,7 @@ public class CloudWatchAppenderTest {
 		verify(awsLogClient, emergencyAppender);
 	}
 
-	@Test
+	@Test(timeout = 10000)
 	public void testLogClientFailed() throws InterruptedException {
 		CloudWatchAppender appender = new CloudWatchAppender();
 		appender.setInitialWaitTimeMillis(0);
@@ -221,7 +221,132 @@ public class CloudWatchAppenderTest {
 		appender.stop();
 	}
 
-	@Test(timeout = 5000)
+	@Test(timeout = 10000)
+	public void testBigMessageTruncate() throws InterruptedException {
+		CloudWatchAppender appender = new CloudWatchAppender();
+		AWSLogsClient awsLogClient = createMock(AWSLogsClient.class);
+		appender.setAwsLogsClient(awsLogClient);
+
+		appender.setMaxBatchSize(1);
+		appender.setRegion("region");
+		final String logGroup = "pfqoejpfqe";
+		appender.setLogGroup(logGroup);
+		final String logStream = "pffqjfqjpoqoejpfqe";
+		appender.setLogStream(logStream);
+		appender.setContext(LOGGER_CONTEXT);
+		PatternLayout layout = new PatternLayout();
+		layout.setContext(LOGGER_CONTEXT);
+		layout.setPattern("[%thread] %level %logger{20} - %msg%n%xThrowable");
+		layout.start();
+		appender.setLayout(layout);
+		EmergencyAppender emergency = new EmergencyAppender();
+		appender.addAppender(emergency);
+
+		LoggingEvent event = new LoggingEvent();
+		event.setTimeStamp(System.currentTimeMillis());
+		String loggerName = "name";
+		event.setLoggerName(loggerName);
+		Level level = Level.DEBUG;
+		event.setLevel(level);
+		String message = "fjpewjfpewjfpewjfepowf";
+		event.setMessage(message);
+
+		int maxSize = 10;
+		appender.setMaxEventMessageSize(maxSize);
+
+		String threadName = Thread.currentThread().getName();
+		final String fullMessage =
+				"[" + threadName + "] " + level + " " + loggerName + " - " + message.substring(0, maxSize) + "\n";
+
+		final PutLogEventsResult result = new PutLogEventsResult();
+		String sequence = "ewopjfewfj";
+		result.setNextSequenceToken(sequence);
+		expect(awsLogClient.putLogEvents(isA(PutLogEventsRequest.class))).andAnswer(new IAnswer<PutLogEventsResult>() {
+			@Override
+			public PutLogEventsResult answer() {
+				PutLogEventsRequest request = (PutLogEventsRequest) getCurrentArguments()[0];
+				assertEquals(logGroup, request.getLogGroupName());
+				assertEquals(logStream, request.getLogStreamName());
+				List<InputLogEvent> events = request.getLogEvents();
+				assertEquals(1, events.size());
+				assertEquals(fullMessage, events.get(0).getMessage());
+				return result;
+			}
+		});
+		awsLogClient.shutdown();
+
+		// =====================================
+
+		replay(awsLogClient);
+		appender.start();
+		// for coverage
+		appender.start();
+		appender.append(event);
+		while (appender.getEventsWrittenCount() < 1) {
+			Thread.sleep(10);
+		}
+		appender.stop();
+		verify(awsLogClient);
+		assertNull(emergency.event);
+	}
+
+	@Test(timeout = 10000)
+	public void testBigMessageDrop() throws InterruptedException {
+		CloudWatchAppender appender = new CloudWatchAppender();
+		AWSLogsClient awsLogClient = createMock(AWSLogsClient.class);
+		appender.setAwsLogsClient(awsLogClient);
+
+		appender.setMaxBatchSize(1);
+		appender.setRegion("region");
+		final String logGroup = "pfqoejpfqe";
+		appender.setLogGroup(logGroup);
+		final String logStream = "pffqjfqjpoqoejpfqe";
+		appender.setLogStream(logStream);
+		appender.setContext(LOGGER_CONTEXT);
+		PatternLayout layout = new PatternLayout();
+		layout.setContext(LOGGER_CONTEXT);
+		layout.setPattern("[%thread] %level %logger{20} - %msg%n%xThrowable");
+		layout.start();
+		appender.setLayout(layout);
+		EmergencyAppender emergency = new EmergencyAppender();
+		appender.addAppender(emergency);
+
+		LoggingEvent event = new LoggingEvent();
+		event.setTimeStamp(System.currentTimeMillis());
+		String loggerName = "name";
+		event.setLoggerName(loggerName);
+		Level level = Level.DEBUG;
+		event.setLevel(level);
+		String message = "fjpewjfpewjfpewjfepowf";
+		event.setMessage(message);
+
+		int maxSize = 10;
+		appender.setMaxEventMessageSize(maxSize);
+		appender.setTruncateEventMessages(false);
+
+		final PutLogEventsResult result = new PutLogEventsResult();
+		String sequence = "ewopjfewfj";
+		result.setNextSequenceToken(sequence);
+		awsLogClient.shutdown();
+
+		// =====================================
+
+		replay(awsLogClient);
+		appender.start();
+		// for coverage
+		appender.start();
+		appender.append(event);
+		while (emergency.event == null) {
+			Thread.sleep(10);
+		}
+		appender.stop();
+		verify(awsLogClient);
+
+		assertSame(event, emergency.event);
+		assertEquals(0, appender.getEventsWrittenCount());
+	}
+
+	@Test(timeout = 10000)
 	public void testCoverage() {
 		CloudWatchAppender appender = new CloudWatchAppender();
 		appender.setInitialWaitTimeMillis(0);
@@ -281,29 +406,31 @@ public class CloudWatchAppenderTest {
 
 		assertNull(appender.getAppender("foo"));
 		assertNull(appender.getAppender(null));
-		assertNull(appender.getAppender(NullAppender.NAME));
+		assertNull(appender.getAppender(EmergencyAppender.NAME));
 
 		// yes we are calling ourselves
-		NullAppender nullAppender = new NullAppender();
+		EmergencyAppender nullAppender = new EmergencyAppender();
 		assertFalse(appender.detachAppender(nullAppender));
-		assertFalse(appender.detachAppender(NullAppender.NAME));
+		assertFalse(appender.detachAppender(EmergencyAppender.NAME));
 		appender.addAppender(nullAppender);
 
 		assertNull(appender.getAppender("foo"));
 		assertNull(appender.getAppender(null));
-		assertSame(nullAppender, appender.getAppender(NullAppender.NAME));
+		assertSame(nullAppender, appender.getAppender(EmergencyAppender.NAME));
 
-		appender.addAppender(new NullAppender());
+		appender.addAppender(new EmergencyAppender());
 		assertTrue(appender.detachAppender(nullAppender));
-		appender.addAppender(new NullAppender());
+		appender.addAppender(new EmergencyAppender());
 		assertFalse(appender.detachAppender("something"));
-		assertTrue(appender.detachAppender(NullAppender.NAME));
-		assertNull(appender.getAppender(NullAppender.NAME));
+		assertTrue(appender.detachAppender(EmergencyAppender.NAME));
+		assertNull(appender.getAppender(EmergencyAppender.NAME));
 	}
 
-	private static class NullAppender implements Appender<ILoggingEvent> {
+	private static class EmergencyAppender implements Appender<ILoggingEvent> {
 
-		public static final String NAME = "null-appender";
+		public static final String NAME = "emergency";
+
+		public ILoggingEvent event;
 
 		@Override
 		public void start() {
@@ -380,6 +507,7 @@ public class CloudWatchAppenderTest {
 
 		@Override
 		public void doAppend(ILoggingEvent event) throws LogbackException {
+			this.event = event;
 		}
 
 		@Override
