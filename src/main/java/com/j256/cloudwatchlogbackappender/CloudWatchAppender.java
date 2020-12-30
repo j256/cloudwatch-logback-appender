@@ -42,6 +42,7 @@ import com.amazonaws.util.EC2MetadataUtils;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.classic.spi.IThrowableProxy;
 import ch.qos.logback.classic.spi.LoggingEvent;
 import ch.qos.logback.classic.spi.ThrowableProxy;
 import ch.qos.logback.core.Appender;
@@ -75,6 +76,8 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	public static final String AWS_ACCESS_KEY_ID_PROPERTY = "cloudwatchappender.aws.accessKeyId";
 	/** property looked for to find the aws secret-key */
 	public static final String AWS_SECRET_KEY_PROPERTY = "cloudwatchappender.aws.secretKey";
+	public static final int DEFAULT_MAX_EVENT_MESSAGE_SIZE = 256 * 1024;
+	public static final boolean DEFAULT_TRUNCATE_EVENT_MESSAGES = true;
 
 	private String accessKeyId;
 	private String secretKey;
@@ -89,6 +92,8 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	private int internalQueueSize = DEFAULT_INTERNAL_QUEUE_SIZE;
 	private boolean createLogDests = DEFAULT_CREATE_LOG_DESTS;
 	private long initialWaitTimeMillis = DEFAULT_INITIAL_WAIT_TIME_MILLIS;
+	private int maxEventMessageSize = DEFAULT_MAX_EVENT_MESSAGE_SIZE;
+	private boolean truncateEventMessages = DEFAULT_TRUNCATE_EVENT_MESSAGES;
 
 	private AWSLogsClient awsLogsClient;
 	private long eventsWrittenCount;
@@ -257,6 +262,14 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		this.awsLogsClient = awsLogsClient;
 	}
 
+	public void setMaxEventMessageSize(int maxEventMessageSize) {
+		this.maxEventMessageSize = maxEventMessageSize;
+	}
+
+	public void setTruncateEventMessages(boolean truncateEventMessages) {
+		this.truncateEventMessages = truncateEventMessages;
+	}
+
 	// for testing purposes
 	long getEventsWrittenCount() {
 		return eventsWrittenCount;
@@ -364,6 +377,31 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 					if (loggingEvent == null) {
 						// wait timed out
 						break;
+					}
+					String message = loggingEvent.getMessage();
+					if (message != null && message.length() > maxEventMessageSize) {
+						if (!truncateEventMessages) {
+							// we can't truncate so then bail
+							appendToEmergencyAppender(loggingEvent);
+							continue;
+						}
+						message = message.substring(0, maxEventMessageSize);
+						// we copy all of the fields over but with the truncated message
+						LoggingEvent truncatedEvent = new LoggingEvent();
+						truncatedEvent.setArgumentArray(loggingEvent.getArgumentArray());
+						truncatedEvent.setLevel(loggingEvent.getLevel());
+						truncatedEvent.setLoggerContextRemoteView(loggingEvent.getLoggerContextVO());
+						truncatedEvent.setLoggerName(loggingEvent.getLoggerName());
+						truncatedEvent.setMarker(loggingEvent.getMarker());
+						truncatedEvent.setMDCPropertyMap(loggingEvent.getMDCPropertyMap());
+						truncatedEvent.setMessage(message);
+						truncatedEvent.setThreadName(loggingEvent.getThreadName());
+						IThrowableProxy ithrowableProxy = loggingEvent.getThrowableProxy();
+						if (ithrowableProxy instanceof ThrowableProxy) {
+							truncatedEvent.setThrowableProxy((ThrowableProxy) ithrowableProxy);
+						}
+						truncatedEvent.setTimeStamp(loggingEvent.getTimeStamp());
+						loggingEvent = truncatedEvent;
 					}
 					events.add(loggingEvent);
 					if (events.size() >= maxBatchSize) {
@@ -485,6 +523,16 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			}
 		}
 
+		private void appendToEmergencyAppender(ILoggingEvent event) {
+			if (emergencyAppender != null) {
+				try {
+					emergencyAppender.doAppend(event);
+				} catch (Exception e) {
+					// oh well, we tried
+				}
+			}
+		}
+
 		private void createLogsClient() {
 			AWSCredentialsProvider credentialProvider;
 			if (MiscUtils.isBlank(accessKeyId)) {
@@ -581,7 +629,8 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 				appendEvent(Level.INFO, "Ran log client method " + methodName + ", arg " + arg, null);
 			} catch (Exception e) {
 				if (emergencyAppender != null) {
-					emergencyAppender.addError("Problems running log-client method: " + methodName + ", arg: " + arg, e);
+					emergencyAppender.addError("Problems running log-client method: " + methodName + ", arg: " + arg,
+							e);
 				}
 				appendEvent(Level.ERROR, "Problems running log-client method: " + methodName + ", arg: " + arg, e);
 			}
