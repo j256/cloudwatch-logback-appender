@@ -20,26 +20,26 @@ Enjoy, Gray Watson
 		<groupId>com.j256.cloudwatchlogbackappender</groupId>
 		<artifactId>cloudwatchlogbackappender</artifactId>
 		<!-- NOTE: change the version to the most recent release version from the repo -->
-		<version>1.11</version>
+		<version>2.0</version>
 	</dependency>
 </dependencies>
 ```
 
 ## Dependencies
 
-By default the appender has dependencies on version 1.10.40 of the log (cloudwatch) and ec2 AWS SDK
+By default the appender has dependencies on logback (duh) but also the log (cloudwatch) and ec2 AWS SDK
 packages.  You can add a exclusion for these packages if you want to depend on different versions.
 
 ``` xml
 <dependency>
 	<groupId>com.amazonaws</groupId>
 	<artifactId>aws-java-sdk-logs</artifactId>
-	<version>1.10.40</version>
+	<version>1.11.914</version>
 </dependency>
 <dependency>
 	<groupId>com.amazonaws</groupId>
 	<artifactId>aws-java-sdk-ec2</artifactId>
-	<version>1.10.40</version>
+	<version>1.11.914</version>
 </dependency>
 ```
 

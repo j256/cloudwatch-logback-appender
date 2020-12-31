@@ -1,0 +1,22 @@
+-------------------------------------------------------------------------------
+
+The following set of tasks should be performed when the libary gets released.
+
+1) Update the ChangeLog file with the release date.
+2) Update the version numbers in the following files:
+	Changlog
+	README.md
+	pom.xml
+3) Consider updating the copyright heads in LICENSE.txt
+4) Consider chaning the versions of dependencies in README.md
+5) Check in all files.
+6) mvn test
+7) Run release.sh script.  It will publish to sonos.
+8) Close and release sonos package.
+9) git tag the release:
+   git tag cloudwatch-logback-appender_release_X_X
+   git push origin cloudwatch-logback-appender_release_X_X
+10) create release on github for X.X.X from that tag
+    https://github.com/j256/cloudwatch-logback-appender/tags
+
+-------------------------------------------------------------------------------
