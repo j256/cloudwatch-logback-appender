@@ -182,7 +182,7 @@
 			<plugin>
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
-				<version>0.8.5</version>
+				<version>0.8.6</version>
 				<executions>
 					<execution>
 						<goals>
@@ -197,6 +197,11 @@
 						</goals>
 					</execution>
 				</executions>
+			</plugin>
+			<plugin>
+				<groupId>com.j256.testcheckpublisher</groupId>
+				<artifactId>test-check-publisher-maven-plugin</artifactId>
+				<version>0.9</version>
 			</plugin>
 		</plugins>
 		<pluginManagement>
