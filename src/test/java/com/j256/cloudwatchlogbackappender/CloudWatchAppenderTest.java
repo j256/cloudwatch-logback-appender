@@ -19,8 +19,10 @@ import java.util.Collections;
 import java.util.List;
 
 import org.easymock.IAnswer;
+import org.junit.Before;
 import org.junit.Test;
 
+import com.amazonaws.SDKGlobalConfiguration;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.AWSLogsClient;
@@ -54,6 +56,12 @@ public class CloudWatchAppenderTest {
 
 	private final LoggerContext LOGGER_CONTEXT = new LoggerContext();
 
+	@Before
+	public void before() {
+		System.setProperty(SDKGlobalConfiguration.EC2_METADATA_SERVICE_OVERRIDE_SYSTEM_PROPERTY,
+				"bad-address.j256.com");
+	}
+
 	@Test(timeout = 10000)
 	public void testBasic() throws InterruptedException {
 		CloudWatchAppender appender = new CloudWatchAppender();
@@ -73,14 +81,10 @@ public class CloudWatchAppenderTest {
 		layout.start();
 		appender.setLayout(layout);
 
-		LoggingEvent event = new LoggingEvent();
-		event.setTimeStamp(System.currentTimeMillis());
 		String loggerName = "name";
-		event.setLoggerName(loggerName);
 		Level level = Level.DEBUG;
-		event.setLevel(level);
 		String message = "fjpewjfpewjfpewjfepowf";
-		event.setMessage(message);
+		LoggingEvent event = createEvent(loggerName, level, message, System.currentTimeMillis());
 
 		String threadName = Thread.currentThread().getName();
 		final String fullMessage = "[" + threadName + "] " + level + " " + loggerName + " - " + message + "\n";
@@ -109,10 +113,64 @@ public class CloudWatchAppenderTest {
 		// for coverage
 		appender.start();
 		appender.append(event);
-		Thread.sleep(10);
+		Thread.sleep(100);
 		appender.append(event);
 		while (appender.getEventsWrittenCount() < 2) {
-			Thread.sleep(10);
+			Thread.sleep(100);
+		}
+		appender.stop();
+		verify(awsLogClient);
+	}
+
+	@Test(timeout = 10000)
+	public void testBatchTimeout() throws InterruptedException {
+		CloudWatchAppender appender = new CloudWatchAppender();
+		AWSLogs awsLogClient = createMock(AWSLogs.class);
+		appender.setAwsLogsClient(awsLogClient);
+
+		appender.setMaxBatchTimeMillis(300);
+		appender.setRegion("region");
+		final String logGroup = "pfqoejpfqe";
+		appender.setLogGroup(logGroup);
+		final String logStream = "pffqjfqjpoqoejpfqe";
+		appender.setLogStream(logStream);
+		appender.setContext(LOGGER_CONTEXT);
+		PatternLayout layout = new PatternLayout();
+		layout.setContext(LOGGER_CONTEXT);
+		layout.setPattern("[%thread] %level %logger{20} - %msg%n%xThrowable");
+		layout.start();
+		appender.setLayout(layout);
+
+		final PutLogEventsResult result = new PutLogEventsResult();
+		String sequence = "ewopjfewfj";
+		result.setNextSequenceToken(sequence);
+		expect(awsLogClient.putLogEvents(isA(PutLogEventsRequest.class))).andAnswer(new IAnswer<PutLogEventsResult>() {
+			@Override
+			public PutLogEventsResult answer() {
+				PutLogEventsRequest request = (PutLogEventsRequest) getCurrentArguments()[0];
+				assertEquals(logGroup, request.getLogGroupName());
+				assertEquals(logStream, request.getLogStreamName());
+				return result;
+			}
+		}).anyTimes();
+		awsLogClient.shutdown();
+
+		// =====================================
+
+		replay(awsLogClient);
+		appender.start();
+		// for coverage
+		appender.start();
+
+		long now = System.currentTimeMillis();
+		appender.append(createEvent("name", Level.DEBUG, "message", null));
+		appender.append(createEvent("name", Level.DEBUG, "message", now));
+		appender.append(createEvent("name", Level.DEBUG, "message", null));
+		appender.append(createEvent("name", Level.DEBUG, "message", now - 1));
+		appender.append(createEvent("name", Level.DEBUG, null, null));
+		appender.append(createEvent("name", Level.DEBUG, "message", now + 1));
+		while (appender.getEventsWrittenCount() < 6) {
+			Thread.sleep(100);
 		}
 		appender.stop();
 		verify(awsLogClient);
@@ -138,14 +196,11 @@ public class CloudWatchAppenderTest {
 		layout.start();
 		appender.setLayout(layout);
 
-		LoggingEvent event = new LoggingEvent();
-		event.setTimeStamp(System.currentTimeMillis());
 		final String loggerName = "name";
-		event.setLoggerName(loggerName);
 		final Level level = Level.DEBUG;
-		event.setLevel(level);
-		String message = "fjpewjfpewjfpewjfepowf";
-		event.setMessage(message);
+		String message = "gerehttrjtrjegr";
+		LoggingEvent event = createEvent(loggerName, level, message, System.currentTimeMillis());
+
 		final String threadName = Thread.currentThread().getName();
 
 		expect(awsLogClient.putLogEvents(isA(PutLogEventsRequest.class)))
@@ -223,14 +278,10 @@ public class CloudWatchAppenderTest {
 		appender.addAppender(emergencyAppender);
 		appender.start();
 
-		LoggingEvent event = new LoggingEvent();
-		event.setTimeStamp(System.currentTimeMillis());
 		final String loggerName = "name";
-		event.setLoggerName(loggerName);
 		final Level level = Level.DEBUG;
-		event.setLevel(level);
-		String message = "fjpewjfpewjfpewjfepowf";
-		event.setMessage(message);
+		String message = "hhtthhtrthrhtr";
+		LoggingEvent event = createEvent(loggerName, level, message, System.currentTimeMillis());
 
 		appender.append(event);
 		while (emergencyAppender.count == 0) {
@@ -261,14 +312,10 @@ public class CloudWatchAppenderTest {
 		EmergencyAppender emergency = new EmergencyAppender();
 		appender.addAppender(emergency);
 
-		LoggingEvent event = new LoggingEvent();
-		event.setTimeStamp(System.currentTimeMillis());
-		String loggerName = "name";
-		event.setLoggerName(loggerName);
-		Level level = Level.DEBUG;
-		event.setLevel(level);
-		String message = "fjpewjfpewjfpewjfepowf";
-		event.setMessage(message);
+		final String loggerName = "name";
+		final Level level = Level.DEBUG;
+		String message = "hyjjytuytjyjtyhrtfwwef";
+		LoggingEvent event = createEvent(loggerName, level, message, System.currentTimeMillis());
 
 		int maxSize = 10;
 		appender.setMaxEventMessageSize(maxSize);
@@ -302,7 +349,7 @@ public class CloudWatchAppenderTest {
 		appender.start();
 		appender.append(event);
 		while (appender.getEventsWrittenCount() < 1) {
-			Thread.sleep(10);
+			Thread.sleep(100);
 		}
 		appender.stop();
 		verify(awsLogClient);
@@ -330,14 +377,10 @@ public class CloudWatchAppenderTest {
 		EmergencyAppender emergency = new EmergencyAppender();
 		appender.addAppender(emergency);
 
-		LoggingEvent event = new LoggingEvent();
-		event.setTimeStamp(System.currentTimeMillis());
-		String loggerName = "name";
-		event.setLoggerName(loggerName);
-		Level level = Level.DEBUG;
-		event.setLevel(level);
-		String message = "fjpewjfpewjfpewjfepowf";
-		event.setMessage(message);
+		final String loggerName = "name";
+		final Level level = Level.DEBUG;
+		String message = "ytjkuyliuyiuk";
+		LoggingEvent event = createEvent(loggerName, level, message, System.currentTimeMillis());
 
 		int maxSize = 10;
 		appender.setMaxEventMessageSize(maxSize);
@@ -356,7 +399,7 @@ public class CloudWatchAppenderTest {
 		appender.start();
 		appender.append(event);
 		while (emergency.event == null) {
-			Thread.sleep(10);
+			Thread.sleep(100);
 		}
 		appender.stop();
 		verify(awsLogClient);
@@ -373,7 +416,6 @@ public class CloudWatchAppenderTest {
 		appender.setTestAwsLogsClient(logsClient);
 		appender.setTestAmazonEc2Client(ec2Client);
 
-		Ec2MetadataUtilsClient.setReturnNull(true);
 		appender.setMaxBatchSize(1);
 		appender.setRegion("region");
 		final String logGroup = "pfqoejpfqe";
@@ -387,14 +429,10 @@ public class CloudWatchAppenderTest {
 		layout.start();
 		appender.setLayout(layout);
 
-		LoggingEvent event = new LoggingEvent();
-		event.setTimeStamp(System.currentTimeMillis());
-		String loggerName = "name";
-		event.setLoggerName(loggerName);
-		Level level = Level.DEBUG;
-		event.setLevel(level);
-		String message = "fjpewjfpewjfpewjfepowf";
-		event.setMessage(message);
+		final String loggerName = "name";
+		final Level level = Level.DEBUG;
+		String message = "kuykregddwqwef4wve";
+		LoggingEvent event = createEvent(loggerName, level, message, System.currentTimeMillis());
 
 		String threadName = Thread.currentThread().getName();
 		final String fullMessage = "[" + threadName + "] " + level + " " + loggerName + " - " + message + "\n";
@@ -461,14 +499,10 @@ public class CloudWatchAppenderTest {
 		layout.start();
 		appender.setLayout(layout);
 
-		LoggingEvent event = new LoggingEvent();
-		event.setTimeStamp(System.currentTimeMillis());
-		String loggerName = "name";
-		event.setLoggerName(loggerName);
-		Level level = Level.DEBUG;
-		event.setLevel(level);
-		String message = "fjpewjfpewjfpewjfepowf";
-		event.setMessage(message);
+		final String loggerName = "name";
+		final Level level = Level.DEBUG;
+		String message = "kuuyuyuykkkyjtyh";
+		LoggingEvent event = createEvent(loggerName, level, message, System.currentTimeMillis());
 
 		String threadName = Thread.currentThread().getName();
 		final String fullMessage = "[" + threadName + "] " + level + " " + loggerName + " - " + message + "\n";
@@ -511,10 +545,10 @@ public class CloudWatchAppenderTest {
 		// for coverage
 		appender.start();
 		appender.append(event);
-		Thread.sleep(10);
+		Thread.sleep(100);
 		appender.append(event);
 		while (appender.getEventsWrittenCount() < 2) {
-			Thread.sleep(10);
+			Thread.sleep(100);
 		}
 		appender.stop();
 		verify(logsClient, ec2Client);
@@ -598,6 +632,17 @@ public class CloudWatchAppenderTest {
 		assertFalse(appender.detachAppender("something"));
 		assertTrue(appender.detachAppender(EmergencyAppender.NAME));
 		assertNull(appender.getAppender(EmergencyAppender.NAME));
+	}
+
+	private LoggingEvent createEvent(String name, Level level, String message, Long time) {
+		LoggingEvent event = new LoggingEvent();
+		event.setLoggerName(name);
+		event.setLevel(level);
+		event.setMessage(message);
+		if (time != null) {
+			event.setTimeStamp(time);
+		}
+		return event;
 	}
 
 	private static class EmergencyAppender implements Appender<ILoggingEvent> {

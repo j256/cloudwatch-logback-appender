@@ -39,6 +39,7 @@ import com.amazonaws.services.logs.model.LogGroup;
 import com.amazonaws.services.logs.model.LogStream;
 import com.amazonaws.services.logs.model.PutLogEventsRequest;
 import com.amazonaws.services.logs.model.PutLogEventsResult;
+import com.amazonaws.util.EC2MetadataUtils;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
@@ -694,7 +695,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		}
 
 		private void lookupInstanceName(AWSCredentialsProvider credentialProvider) {
-			String instanceId = Ec2MetadataUtilsClient.lookupInstanceId();
+			String instanceId = EC2MetadataUtils.getInstanceId();
 			if (instanceId == null) {
 				return;
 			}
