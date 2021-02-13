@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.AmazonWebServiceRequest;
@@ -38,7 +39,6 @@ import com.amazonaws.services.logs.model.LogGroup;
 import com.amazonaws.services.logs.model.LogStream;
 import com.amazonaws.services.logs.model.PutLogEventsRequest;
 import com.amazonaws.services.logs.model.PutLogEventsResult;
-import com.amazonaws.util.EC2MetadataUtils;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
@@ -102,7 +102,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	private AWSLogs awsLogsClient;
 	private AWSLogs testAwsLogsClient;
 	private AmazonEC2 testAmazonEc2Client;
-	private long eventsWrittenCount;
+	private AtomicLong eventsWrittenCount = new AtomicLong(0);
 
 	private BlockingQueue<ILoggingEvent> loggingEventQueue;
 	private Thread cloudWatchWriterThread;
@@ -320,7 +320,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 
 	// for testing purposes
 	long getEventsWrittenCount() {
-		return eventsWrittenCount;
+		return eventsWrittenCount.get();
 	}
 
 	// for testing purposes
@@ -562,7 +562,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 						PutLogEventsResult result = awsLogsClient.putLogEvents(request);
 						sequenceToken = result.getNextSequenceToken();
 						exception = null;
-						eventsWrittenCount += logEvents.size();
+						eventsWrittenCount.addAndGet(logEvents.size());
 						break;
 					} catch (InvalidSequenceTokenException iste) {
 						exception = iste;
@@ -694,7 +694,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		}
 
 		private void lookupInstanceName(AWSCredentialsProvider credentialProvider) {
-			String instanceId = EC2MetadataUtils.getInstanceId();
+			String instanceId = Ec2MetadataUtilsClient.lookupInstanceId();
 			if (instanceId == null) {
 				return;
 			}
