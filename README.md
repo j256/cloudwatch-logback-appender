@@ -101,6 +101,9 @@ supports the EC2MetadataUtils methods for looking up the information.  You can c
 `Ec2InstanceNameConverter.setInstanceName(...)` or `Ec2InstanceIdConverter.setInstanceId(...)` early in your
 program if you want to set them yourself. 
 
+**NOTE:** `logGroup` must match the regex pattern `[\.\-_/#A-Za-z0-9]+`.  `logStream` cannot contain the ':' character
+which will be replaced by '_'.
+
 The appender also adds the support for the previous list of % tokens to be expanded on each log line:
 
 ``` xml
