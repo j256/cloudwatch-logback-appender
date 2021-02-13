@@ -26,7 +26,7 @@
 		<logback.version>1.0.11</logback.version>
 		<aws-version>1.11.914</aws-version>
 		<!-- test dependencies -->
-		<junit-version>4.13.1</junit-version>
+		<junit-version>4.13.2</junit-version>
 		<easymock-version>3.4</easymock-version>
 	</properties>
 	<scm>
