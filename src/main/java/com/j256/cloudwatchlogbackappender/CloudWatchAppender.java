@@ -11,9 +11,11 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.regex.Pattern;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.AmazonWebServiceRequest;
+import com.amazonaws.SDKGlobalConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
@@ -81,6 +83,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	public static final boolean DEFAULT_TRUNCATE_EVENT_MESSAGES = true;
 	public static final boolean DEFAULT_COPY_EVENTS = true;
 	public static final boolean DEFAULT_PRINT_REJECTED_EVENTS = false;
+	public static final Pattern LOG_GROUP_PATTERN = Pattern.compile("[\\.\\-_/#A-Za-z0-9]+");
 
 	private String accessKeyId;
 	private String secretKey;
@@ -132,6 +135,10 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		}
 		if (MiscUtils.isBlank(logGroupName)) {
 			throw new IllegalStateException("Log group name not set or invalid for appender: " + logGroupName);
+		}
+		if (!LOG_GROUP_PATTERN.matcher(logGroupName).matches()) {
+			throw new IllegalStateException("Log group name does not match AWS acceptance pattern '" + LOG_GROUP_PATTERN
+					+ "': " + logGroupName);
 		}
 		if (MiscUtils.isBlank(logStreamName)) {
 			throw new IllegalStateException("Log stream name not set or invalid for appender: " + logStreamName);
@@ -317,6 +324,12 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	// not required, default is false
 	public void setPrintRejectedEvents(boolean printRejectedEvents) {
 		this.printRejectedEvents = printRejectedEvents;
+	}
+
+	// not required, for testing purposes
+	public void setEc2MetadataServiceOverride(String ec2MetadataServiceOverride) {
+		System.setProperty(SDKGlobalConfiguration.EC2_METADATA_SERVICE_OVERRIDE_SYSTEM_PROPERTY,
+				ec2MetadataServiceOverride);
 	}
 
 	// for testing purposes
@@ -669,6 +682,8 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			event.setMessage("log stream name");
 			event.setTimeStamp(System.currentTimeMillis());
 			name = nameLayout.doLayout(event);
+			// replace the only character that cloudwatch barfs on: Member must satisfy regex pattern: [^:*]*
+			name = name.replace(':', '_');
 			return name;
 		}
 
