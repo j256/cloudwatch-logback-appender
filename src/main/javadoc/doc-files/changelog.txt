@@ -1,3 +1,6 @@
+2.1: 2/13/2021
+	* Added code to throw if bad characters in logGroup and convert ':' to '_' in logStream.
+
 2.0: 12/30/2020
 	* Render the log-stream name with the Ec2PatternLayout to support %date and other patterns.
 	* Added %uuid, %hostName, %hostAddress, %systemProperty, and %systemEnviron layout patterns.
