@@ -59,7 +59,7 @@ public class CloudWatchAppenderTest {
 	@Before
 	public void before() {
 		System.setProperty(SDKGlobalConfiguration.EC2_METADATA_SERVICE_OVERRIDE_SYSTEM_PROPERTY,
-				"bad-address.j256.com");
+				"http://bad-address.j256.com");
 	}
 
 	@Test(timeout = 10000)
@@ -579,6 +579,13 @@ public class CloudWatchAppenderTest {
 		} catch (IllegalStateException ise) {
 			// expected
 		}
+		appender.setLogGroup(" wrong ");
+		try {
+			appender.start();
+			fail("Should have thrown");
+		} catch (IllegalStateException ise) {
+			// expected
+		}
 		appender.setLogGroup("log-group");
 		try {
 			appender.start();
@@ -586,7 +593,7 @@ public class CloudWatchAppenderTest {
 		} catch (IllegalStateException ise) {
 			// expected
 		}
-		appender.setLogStream("log-group");
+		appender.setLogStream("log-stream");
 		try {
 			appender.start();
 			fail("Should have thrown");

@@ -1,4 +1,5 @@
 <configuration>
+	<!-- Used for integration testing -->
 
 	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
 		<encoder>
@@ -14,7 +15,11 @@
 			<!-- note: the %n is necessary to separate from any exceptions -->
 			<pattern>[%instance] [%thread] %level %logger{20} - %msg%n%xThrowable</pattern>
 		</layout>
-		<initialWaitTimeMillis>3000</initialWaitTimeMillis>
+		<initialWaitTimeMillis>1000</initialWaitTimeMillis>
+		<maxBatchTimeMillis>1000</maxBatchTimeMillis>
+		<printRejectedEvents>true</printRejectedEvents>
+		<ec2MetadataServiceOverride>http://invalid.j256.com</ec2MetadataServiceOverride>
+		<!-- emergency appender -->
 		<appender-ref ref="STDOUT" />
 	</appender>
 
