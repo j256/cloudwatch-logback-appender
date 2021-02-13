@@ -206,6 +206,7 @@ public class CloudWatchAppenderTest {
 		appender.setInitialWaitTimeMillis(0);
 
 		appender.setMaxBatchSize(1);
+		appender.setMaxBatchTimeMillis(100);
 		appender.setRegion("us-east-1");
 		final String logGroup = "pfqoejpfqe";
 		appender.setLogGroup(logGroup);
@@ -218,6 +219,8 @@ public class CloudWatchAppenderTest {
 		layout.start();
 		appender.setLayout(layout);
 		appender.setContext(LOGGER_CONTEXT);
+		EmergencyAppender emergencyAppender = new EmergencyAppender();
+		appender.addAppender(emergencyAppender);
 		appender.start();
 
 		LoggingEvent event = new LoggingEvent();
@@ -230,7 +233,9 @@ public class CloudWatchAppenderTest {
 		event.setMessage(message);
 
 		appender.append(event);
-		Thread.sleep(3000);
+		while (emergencyAppender.count == 0) {
+			Thread.sleep(100);
+		}
 		assertEquals(0, appender.getEventsWrittenCount());
 		appender.stop();
 	}
@@ -368,6 +373,7 @@ public class CloudWatchAppenderTest {
 		appender.setTestAwsLogsClient(logsClient);
 		appender.setTestAmazonEc2Client(ec2Client);
 
+		Ec2MetadataUtilsClient.setReturnNull(true);
 		appender.setMaxBatchSize(1);
 		appender.setRegion("region");
 		final String logGroup = "pfqoejpfqe";
@@ -425,10 +431,10 @@ public class CloudWatchAppenderTest {
 		// for coverage
 		appender.start();
 		appender.append(event);
-		Thread.sleep(10);
+		Thread.sleep(100);
 		appender.append(event);
 		while (appender.getEventsWrittenCount() < 2) {
-			Thread.sleep(10);
+			Thread.sleep(100);
 		}
 		appender.stop();
 		verify(logsClient, ec2Client);
@@ -598,7 +604,8 @@ public class CloudWatchAppenderTest {
 
 		public static final String NAME = "emergency";
 
-		public ILoggingEvent event;
+		ILoggingEvent event;
+		volatile int count;
 
 		@Override
 		public void start() {
@@ -676,6 +683,7 @@ public class CloudWatchAppenderTest {
 		@Override
 		public void doAppend(ILoggingEvent event) throws LogbackException {
 			this.event = event;
+			count++;
 		}
 
 		@Override
