@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 
 import com.amazonaws.AmazonServiceException;
@@ -106,7 +105,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	private AWSLogs awsLogsClient;
 	private AWSLogs testAwsLogsClient;
 	private AmazonEC2 testAmazonEc2Client;
-	private AtomicLong eventsWrittenCount = new AtomicLong(0);
+	private volatile long eventsWrittenCount;
 
 	private BlockingQueue<ILoggingEvent> loggingEventQueue;
 	private Thread cloudWatchWriterThread;
@@ -334,7 +333,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 
 	// for testing purposes
 	long getEventsWrittenCount() {
-		return eventsWrittenCount.get();
+		return eventsWrittenCount;
 	}
 
 	// for testing purposes
@@ -576,7 +575,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 						PutLogEventsResult result = awsLogsClient.putLogEvents(request);
 						sequenceToken = result.getNextSequenceToken();
 						exception = null;
-						eventsWrittenCount.addAndGet(logEvents.size());
+						eventsWrittenCount += logEvents.size();
 						break;
 					} catch (InvalidSequenceTokenException iste) {
 						exception = iste;
