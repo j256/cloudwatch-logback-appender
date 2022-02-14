@@ -63,6 +63,7 @@ public class CloudWatchAppenderTest {
 	@Test(timeout = 10000)
 	public void testBasic() throws InterruptedException {
 		CloudWatchAppender appender = new CloudWatchAppender();
+		appender.setEc2MetadataServiceAvailable(false);
 		AWSLogs awsLogClient = createMock(AWSLogs.class);
 		appender.setAwsLogsClient(awsLogClient);
 
@@ -123,6 +124,7 @@ public class CloudWatchAppenderTest {
 	@Test(timeout = 10000)
 	public void testBatchTimeout() throws InterruptedException {
 		CloudWatchAppender appender = new CloudWatchAppender();
+		appender.setEc2MetadataServiceAvailable(false);
 		AWSLogs awsLogClient = createMock(AWSLogs.class);
 		appender.setAwsLogsClient(awsLogClient);
 
@@ -177,6 +179,7 @@ public class CloudWatchAppenderTest {
 	@Test(timeout = 10000)
 	public void testEmergencyAppender() throws InterruptedException {
 		CloudWatchAppender appender = new CloudWatchAppender();
+		appender.setEc2MetadataServiceAvailable(false);
 		appender.setInitialWaitTimeMillis(0);
 		AWSLogs awsLogClient = createMock(AWSLogs.class);
 		appender.setAwsLogsClient(awsLogClient);
@@ -252,6 +255,7 @@ public class CloudWatchAppenderTest {
 	@Test(timeout = 10000)
 	public void testLogClientFailed() throws InterruptedException {
 		CloudWatchAppender appender = new CloudWatchAppender();
+		appender.setEc2MetadataServiceAvailable(false);
 		appender.setInitialWaitTimeMillis(0);
 
 		appender.setAccessKeyId("not right");
@@ -292,6 +296,7 @@ public class CloudWatchAppenderTest {
 	@Test(timeout = 10000)
 	public void testBigMessageTruncate() throws InterruptedException {
 		CloudWatchAppender appender = new CloudWatchAppender();
+		appender.setEc2MetadataServiceAvailable(false);
 		AWSLogs awsLogClient = createMock(AWSLogs.class);
 		appender.setAwsLogsClient(awsLogClient);
 
@@ -357,6 +362,7 @@ public class CloudWatchAppenderTest {
 	@Test(timeout = 10000)
 	public void testBigMessageDrop() throws InterruptedException {
 		CloudWatchAppender appender = new CloudWatchAppender();
+		appender.setEc2MetadataServiceAvailable(false);
 		AWSLogs awsLogClient = createMock(AWSLogsClient.class);
 		appender.setAwsLogsClient(awsLogClient);
 
@@ -409,6 +415,7 @@ public class CloudWatchAppenderTest {
 	@Test(timeout = 10000)
 	public void testMoreAwsCalls() throws InterruptedException {
 		CloudWatchAppender appender = new CloudWatchAppender();
+		appender.setEc2MetadataServiceAvailable(false);
 		AWSLogs logsClient = createMock(AWSLogs.class);
 		AmazonEC2 ec2Client = createMock(AmazonEC2.class);
 		appender.setTestAwsLogsClient(logsClient);
@@ -479,6 +486,7 @@ public class CloudWatchAppenderTest {
 	@Test(timeout = 10000)
 	public void testMoreAwsCallsMissingGroupAndStream() throws InterruptedException {
 		CloudWatchAppender appender = new CloudWatchAppender();
+		appender.setEc2MetadataServiceAvailable(false);
 		AWSLogs logsClient = createMock(AWSLogs.class);
 		AmazonEC2 ec2Client = createMock(AmazonEC2.class);
 		appender.setTestAwsLogsClient(logsClient);
@@ -555,6 +563,7 @@ public class CloudWatchAppenderTest {
 	@Test(timeout = 10000)
 	public void testCoverage() {
 		CloudWatchAppender appender = new CloudWatchAppender();
+		appender.setEc2MetadataServiceAvailable(false);
 		appender.setInitialWaitTimeMillis(0);
 		appender.detachAndStopAllAppenders();
 		// stop before starting
