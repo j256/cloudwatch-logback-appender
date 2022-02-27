@@ -10,7 +10,7 @@ self-contained and that were published to the central Maven repo.
 * Code available from the [git repository](https://github.com/j256/cloudwatch-logback-appender).  [![CircleCI](https://circleci.com/gh/j256/cloudwatch-logback-appender.svg?style=svg)](https://circleci.com/gh/j256/cloudwatch-logback-appender) [![CodeCov](https://img.shields.io/codecov/c/github/j256/cloudwatch-logback-appender.svg)](https://codecov.io/github/j256/cloudwatch-logback-appender/)
 * Maven packages are published via [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.j256.cloudwatchlogbackappender/cloudwatchlogbackappender/badge.svg?style=flat-square)](https://maven-badges.herokuapp.com/maven-central/com.j256.cloudwatchlogbackappender/cloudwatchlogbackappender/) [![javadoc](https://javadoc.io/badge2/com.j256.cloudwatchlogbackappender/cloudwatchlogbackappender/javadoc.svg)](https://javadoc.io/doc/com.j256.cloudwatchlogbackappender/cloudwatchlogbackappender)
 
-Enjoy, Gray Watson
+Enjoy. Gray Watson
 
 # Maven Configuration
 
