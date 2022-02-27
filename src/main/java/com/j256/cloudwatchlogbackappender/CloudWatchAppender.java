@@ -326,9 +326,16 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	}
 
 	// not required, for testing purposes
-	public void setEc2MetadataServiceOverride(String ec2MetadataServiceOverride) {
+	public static void setEc2MetadataServiceOverride(String ec2MetadataServiceOverride) {
 		System.setProperty(SDKGlobalConfiguration.EC2_METADATA_SERVICE_OVERRIDE_SYSTEM_PROPERTY,
 				ec2MetadataServiceOverride);
+	}
+
+	/**
+	 * For testing purposes, set the EC2 service override property to the following hostname. Can be "localhost".
+	 */
+	public static void setEc2InstanceName(String testInstanceName) {
+		Ec2InstanceNameConverter.setInstanceName(testInstanceName);
 	}
 
 	// for testing purposes

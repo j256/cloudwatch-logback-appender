@@ -5,14 +5,11 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.amazonaws.SDKGlobalConfiguration;
-
 @Ignore("for integration testing")
 public class CloudWatchAppenderRealTest {
 
 	static {
-		System.setProperty(SDKGlobalConfiguration.EC2_METADATA_SERVICE_OVERRIDE_SYSTEM_PROPERTY,
-				"http://bad-address.j256.com");
+		Ec2InstanceNameConverter.setInstanceName("localhost");
 	}
 
 	@Test

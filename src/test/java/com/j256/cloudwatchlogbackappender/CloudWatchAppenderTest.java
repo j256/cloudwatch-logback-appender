@@ -22,7 +22,6 @@ import org.easymock.IAnswer;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.amazonaws.SDKGlobalConfiguration;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.AWSLogsClient;
@@ -58,8 +57,7 @@ public class CloudWatchAppenderTest {
 
 	@Before
 	public void before() {
-		System.setProperty(SDKGlobalConfiguration.EC2_METADATA_SERVICE_OVERRIDE_SYSTEM_PROPERTY,
-				"http://bad-address.j256.com");
+		Ec2InstanceNameConverter.setInstanceName("localhost");
 	}
 
 	@Test(timeout = 10000)
