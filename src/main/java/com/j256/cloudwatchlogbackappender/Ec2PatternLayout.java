@@ -11,22 +11,22 @@ import ch.qos.logback.classic.PatternLayout;
 public class Ec2PatternLayout extends PatternLayout {
 
 	{
-		defaultConverterMap.put("instance", Ec2InstanceNameConverter.class.getName());
-		defaultConverterMap.put("instanceName", Ec2InstanceNameConverter.class.getName());
-		defaultConverterMap.put("in", Ec2InstanceNameConverter.class.getName());
-		defaultConverterMap.put("instanceId", Ec2InstanceIdConverter.class.getName());
-		defaultConverterMap.put("iid", Ec2InstanceIdConverter.class.getName());
-		defaultConverterMap.put("uuid", UuidConverter.class.getName());
-		defaultConverterMap.put("hostName", HostNameConverter.class.getName());
-		defaultConverterMap.put("host", HostNameConverter.class.getName());
-		defaultConverterMap.put("hostAddress", HostAddressConverter.class.getName());
-		defaultConverterMap.put("address", HostAddressConverter.class.getName());
-		defaultConverterMap.put("addr", HostAddressConverter.class.getName());
-		defaultConverterMap.put("systemProperty", SystemPropertyConverter.class.getName());
-		defaultConverterMap.put("property", SystemPropertyConverter.class.getName());
-		defaultConverterMap.put("prop", SystemPropertyConverter.class.getName());
-		defaultConverterMap.put("systemEnviron", SystemEnvironConverter.class.getName());
-		defaultConverterMap.put("environ", SystemEnvironConverter.class.getName());
-		defaultConverterMap.put("env", SystemEnvironConverter.class.getName());
+		DEFAULT_CONVERTER_MAP.put("instance", Ec2InstanceNameConverter.class.getName());
+		DEFAULT_CONVERTER_MAP.put("instanceName", Ec2InstanceNameConverter.class.getName());
+		DEFAULT_CONVERTER_MAP.put("in", Ec2InstanceNameConverter.class.getName());
+		DEFAULT_CONVERTER_MAP.put("instanceId", Ec2InstanceIdConverter.class.getName());
+		DEFAULT_CONVERTER_MAP.put("iid", Ec2InstanceIdConverter.class.getName());
+		DEFAULT_CONVERTER_MAP.put("uuid", UuidConverter.class.getName());
+		DEFAULT_CONVERTER_MAP.put("hostName", HostNameConverter.class.getName());
+		DEFAULT_CONVERTER_MAP.put("host", HostNameConverter.class.getName());
+		DEFAULT_CONVERTER_MAP.put("hostAddress", HostAddressConverter.class.getName());
+		DEFAULT_CONVERTER_MAP.put("address", HostAddressConverter.class.getName());
+		DEFAULT_CONVERTER_MAP.put("addr", HostAddressConverter.class.getName());
+		DEFAULT_CONVERTER_MAP.put("systemProperty", SystemPropertyConverter.class.getName());
+		DEFAULT_CONVERTER_MAP.put("property", SystemPropertyConverter.class.getName());
+		DEFAULT_CONVERTER_MAP.put("prop", SystemPropertyConverter.class.getName());
+		DEFAULT_CONVERTER_MAP.put("systemEnviron", SystemEnvironConverter.class.getName());
+		DEFAULT_CONVERTER_MAP.put("environ", SystemEnvironConverter.class.getName());
+		DEFAULT_CONVERTER_MAP.put("env", SystemEnvironConverter.class.getName());
 	}
 }
