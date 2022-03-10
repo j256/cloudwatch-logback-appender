@@ -474,7 +474,31 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 				return;
 			}
 
-			List<ILoggingEvent> events = new ArrayList<ILoggingEvent>(maxBatchSize);
+			final List<ILoggingEvent> events = new ArrayList<ILoggingEvent>(maxBatchSize);
+
+			// Register shutdown hook where we write all remaining events to CloudWatch.
+			Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+				@Override
+				public void run() {
+					// Poll all rest of the events.
+					while (true) {
+						ILoggingEvent event = loggingEventQueue.poll();
+						if (event == null) {
+							// nothing else waiting
+							break;
+						}
+						events.add(event);
+						if (events.size() >= maxBatchSize) {
+							CloudWatchWriter.this.writeEvents(events);
+							events.clear();
+						}
+					}
+					if (!events.isEmpty()) {
+						CloudWatchWriter.this.writeEvents(events);
+					}
+				}
+			}));
+
 			Thread thread = Thread.currentThread();
 			while (!thread.isInterrupted()) {
 				long batchTimeout = System.currentTimeMillis() + maxBatchTimeMillis;
@@ -505,29 +529,6 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 					events.clear();
 				}
 			}
-
-			/*
-			 * We have been interrupted so write all of the rest of the events and then quit
-			 */
-
-			events.clear();
-			while (true) {
-				ILoggingEvent event = loggingEventQueue.poll();
-				if (event == null) {
-					// nothing else waiting
-					break;
-				}
-				events.add(event);
-				if (events.size() >= maxBatchSize) {
-					writeEvents(events);
-					events.clear();
-				}
-			}
-			if (!events.isEmpty()) {
-				writeEvents(events);
-				events.clear();
-			}
-			// thread quits here
 		}
 
 		private void writeEvents(List<ILoggingEvent> events) {

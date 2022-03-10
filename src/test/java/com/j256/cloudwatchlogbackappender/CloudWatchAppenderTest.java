@@ -97,7 +97,7 @@ public class CloudWatchAppenderTest {
 				assertEquals(logGroup, request.getLogGroupName());
 				assertEquals(logStream, request.getLogStreamName());
 				List<InputLogEvent> events = request.getLogEvents();
-				assertEquals(1, events.size());
+				assertEquals(2, events.size());
 				assertEquals(fullMessage, events.get(0).getMessage());
 				return result;
 			}
@@ -453,7 +453,7 @@ public class CloudWatchAppenderTest {
 				assertEquals(logGroup, request.getLogGroupName());
 				assertEquals(logStream, request.getLogStreamName());
 				List<InputLogEvent> events = request.getLogEvents();
-				assertEquals(1, events.size());
+				assertEquals(2, events.size());
 				assertEquals(fullMessage, events.get(0).getMessage());
 				return putLogEventsResult;
 			}
@@ -529,7 +529,7 @@ public class CloudWatchAppenderTest {
 				assertEquals(logGroup, request.getLogGroupName());
 				assertEquals(logStream, request.getLogStreamName());
 				List<InputLogEvent> events = request.getLogEvents();
-				assertEquals(1, events.size());
+				assertEquals(2, events.size());
 				assertEquals(fullMessage, events.get(0).getMessage());
 				return putLogEventsResult;
 			}
