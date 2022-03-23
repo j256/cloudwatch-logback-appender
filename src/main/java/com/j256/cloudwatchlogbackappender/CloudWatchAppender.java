@@ -54,7 +54,7 @@ import ch.qos.logback.core.spi.AppenderAttachable;
 
 /**
  * CloudWatch log appender for logback.
- * 
+ *
  * @author graywatson
  */
 public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent>
@@ -83,6 +83,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	public static final boolean DEFAULT_COPY_EVENTS = true;
 	public static final boolean DEFAULT_PRINT_REJECTED_EVENTS = false;
 	public static final Pattern LOG_GROUP_PATTERN = Pattern.compile("[\\.\\-_/#A-Za-z0-9]+");
+	public static final boolean DEFAULT_EC2_METADATA_SERVICE_AVAILABLE = true;
 
 	private String accessKeyId;
 	private String secretKey;
@@ -101,6 +102,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	private boolean truncateEventMessages = DEFAULT_TRUNCATE_EVENT_MESSAGES;
 	private boolean copyEvents = DEFAULT_COPY_EVENTS;
 	private boolean printRejectedEvents = DEFAULT_PRINT_REJECTED_EVENTS;
+	private boolean ec2MetadataServiceAvailable = DEFAULT_EC2_METADATA_SERVICE_AVAILABLE;
 
 	private AWSLogs awsLogsClient;
 	private AWSLogs testAwsLogsClient;
@@ -149,7 +151,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		loggingEventQueue = new ArrayBlockingQueue<ILoggingEvent>(internalQueueSize);
 
 		// create our writer thread in the background
-		cloudWatchWriterThread = new Thread(new CloudWatchWriter(), getClass().getSimpleName());
+		cloudWatchWriterThread = new Thread(new CloudWatchWriter(ec2MetadataServiceAvailable), getClass().getSimpleName());
 		cloudWatchWriterThread.setDaemon(true);
 		cloudWatchWriterThread.start();
 
@@ -326,7 +328,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	}
 
 	// not required, for testing purposes
-	public static void setEc2MetadataServiceOverride(String ec2MetadataServiceOverride) {
+	public void setEc2MetadataServiceOverride(String ec2MetadataServiceOverride) {
 		System.setProperty(SDKGlobalConfiguration.EC2_METADATA_SERVICE_OVERRIDE_SYSTEM_PROPERTY,
 				ec2MetadataServiceOverride);
 	}
@@ -336,6 +338,10 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	 */
 	public static void setEc2InstanceName(String testInstanceName) {
 		Ec2InstanceNameConverter.setInstanceName(testInstanceName);
+	}
+	// not required, default is true
+	public void setEc2MetadataServiceAvailable(boolean ec2MetadataServiceAvailable) {
+		this.ec2MetadataServiceAvailable = ec2MetadataServiceAvailable;
 	}
 
 	// for testing purposes
@@ -459,6 +465,12 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	 * Background thread that writes the log events to cloudwatch.
 	 */
 	private class CloudWatchWriter implements Runnable {
+
+		CloudWatchWriter(boolean ec2MetadataServiceAvailable) {
+			this.ec2MetadataServiceAvailable = ec2MetadataServiceAvailable;
+		}
+
+		private final boolean ec2MetadataServiceAvailable;
 
 		private String sequenceToken;
 		private String logStreamName;
@@ -696,7 +708,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		/**
 		 * This is a hack to work around the problems that were introduced when the appender was compiled with AWS SDK
 		 * version 1.9 or 1.10 but the user was running with version 1.11.
-		 * 
+		 *
 		 * The problem was that the createLogStream() method added a return object somewhere between 1.10 and 1.11 which
 		 * broke backwards compatibility and the applications would throw NoSuchMethodError. Using reflection causes the
 		 * linkage to be weaker and seems to work.
@@ -716,6 +728,10 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		}
 
 		private void lookupInstanceName(AWSCredentialsProvider credentialProvider) {
+			if (!ec2MetadataServiceAvailable) {
+				return;
+			}
+
 			String instanceId = EC2MetadataUtils.getInstanceId();
 			if (instanceId == null) {
 				return;

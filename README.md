@@ -66,25 +66,26 @@ use the standard `%token` such as `%date` in the name of the log-stream – see 
 [logback documentation](http://logback.qos.ch/manual/layouts.html#conversionWord).  The `Ec2PatternLayout` class also
 adds support for additional tokens:
 
-| Property | Description |
-| -------- | ----------- |
-| `instanceName` | Name of the EC2 instance or ID if the name is not available. |
-| `instance` | Same as instanceName. |
-| `in` | Same as instanceName. |
-| `instanceId` | ID of the EC2 instance. |
-| `iid` | Same as instanceId. |
-| `uuid` | Random UUID as a string |
-| `hostName` | Name of the host from `InetAddress.getLocalHost()`. |
-| `host` | Same as hostName. |
-| `hostAddress` | IP address of the host from `InetAddress.getLocalHost()`. |
-| `address` | Same as hostAddress. |
-| `addr` | Same as hostAddress. |
-| `systemProperty` | Value of a system-property whose name is set as an {option}.  Ex: %systemProperty{os.version}`. |
-| `property` | Same as systemProperty. |
-| `prop` | Same as systemProperty. |
-| `systemEnviron` | Value of a environmental variable whose name is set as an {option}.  Ex: %systemEnviron{SHELL}`. |
-| `environ` | Same as systemEnviron. |
-| `env` | Same as systemEnviron. |
+| Property | Description                                                                                                                                                                                                                                          |
+| -------- |------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `instanceName` | Name of the EC2 instance or ID if the name is not available.                                                                                                                                                                                         |
+| `instance` | Same as instanceName.                                                                                                                                                                                                                                |
+| `in` | Same as instanceName.                                                                                                                                                                                                                                |
+| `instanceId` | ID of the EC2 instance.                                                                                                                                                                                                                              |
+| `iid` | Same as instanceId.                                                                                                                                                                                                                                  |
+| `uuid` | Random UUID as a string                                                                                                                                                                                                                              |
+| `hostName` | Name of the host from `InetAddress.getLocalHost()`.                                                                                                                                                                                                  |
+| `host` | Same as hostName.                                                                                                                                                                                                                                    |
+| `hostAddress` | IP address of the host from `InetAddress.getLocalHost()`.                                                                                                                                                                                            |
+| `address` | Same as hostAddress.                                                                                                                                                                                                                                 |
+| `addr` | Same as hostAddress.                                                                                                                                                                                                                                 |
+| `systemProperty` | Value of a system-property whose name is set as an {option}.  Ex: %systemProperty{os.version}`.                                                                                                                                                      |
+| `property` | Same as systemProperty.                                                                                                                                                                                                                              |
+| `prop` | Same as systemProperty.                                                                                                                                                                                                                              |
+| `systemEnviron` | Value of a environmental variable whose name is set as an {option}.  Ex: %systemEnviron{SHELL}`.                                                                                                                                                     |
+| `environ` | Same as systemEnviron.                                                                                                                                                                                                                               |
+| `env` | Same as systemEnviron.                                                                                                                                                                                                                               |
+| `ec2MetadataServiceAvailable` | Set this to false if you are running outside of EC2 (i.e. ECS). This will result in `instanceId` and `instanceName` not being set automatically, so you will have to either set them manually, or make sure they are not used in your layout pattern.|
 
 For example:
 

@@ -18,9 +18,11 @@
 		<initialWaitTimeMillis>1000</initialWaitTimeMillis>
 		<maxBatchTimeMillis>1000</maxBatchTimeMillis>
 		<printRejectedEvents>true</printRejectedEvents>
-		<ec2MetadataServiceOverride>http://invalid.j256.com</ec2MetadataServiceOverride>
 		<!-- emergency appender -->
 		<appender-ref ref="STDOUT" />
+		<!-- Uncomment if you want to override the ec2 endpoint for manual testing -->
+		<!-- <ec2MetadataServiceOverride>http://invalid.j256.com</ec2MetadataServiceOverride>-->
+		<ec2MetadataServiceAvailable>false</ec2MetadataServiceAvailable>
 	</appender>
 
 	<root level="INFO">
