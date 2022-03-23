@@ -66,25 +66,26 @@ use the standard `%token` such as `%date` in the name of the log-stream – see 
 [logback documentation](http://logback.qos.ch/manual/layouts.html#conversionWord).  The `Ec2PatternLayout` class also
 adds support for additional tokens:
 
-| Property | Description |
-| -------- | ----------- |
-| `instanceName` | Name of the EC2 instance or ID if the name is not available. |
-| `instance` | Same as instanceName. |
-| `in` | Same as instanceName. |
-| `instanceId` | ID of the EC2 instance. |
-| `iid` | Same as instanceId. |
-| `uuid` | Random UUID as a string |
-| `hostName` | Name of the host from `InetAddress.getLocalHost()`. |
-| `host` | Same as hostName. |
-| `hostAddress` | IP address of the host from `InetAddress.getLocalHost()`. |
-| `address` | Same as hostAddress. |
-| `addr` | Same as hostAddress. |
-| `systemProperty` | Value of a system-property whose name is set as an {option}.  Ex: %systemProperty{os.version}`. |
-| `property` | Same as systemProperty. |
-| `prop` | Same as systemProperty. |
-| `systemEnviron` | Value of a environmental variable whose name is set as an {option}.  Ex: %systemEnviron{SHELL}`. |
-| `environ` | Same as systemEnviron. |
-| `env` | Same as systemEnviron. |
+| Property | Description                                                                                                                                                                                                                                          |
+| -------- |------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `instanceName` | Name of the EC2 instance or ID if the name is not available.                                                                                                                                                                                         |
+| `instance` | Same as instanceName.                                                                                                                                                                                                                                |
+| `in` | Same as instanceName.                                                                                                                                                                                                                                |
+| `instanceId` | ID of the EC2 instance.                                                                                                                                                                                                                              |
+| `iid` | Same as instanceId.                                                                                                                                                                                                                                  |
+| `uuid` | Random UUID as a string                                                                                                                                                                                                                              |
+| `hostName` | Name of the host from `InetAddress.getLocalHost()`.                                                                                                                                                                                                  |
+| `host` | Same as hostName.                                                                                                                                                                                                                                    |
+| `hostAddress` | IP address of the host from `InetAddress.getLocalHost()`.                                                                                                                                                                                            |
+| `address` | Same as hostAddress.                                                                                                                                                                                                                                 |
+| `addr` | Same as hostAddress.                                                                                                                                                                                                                                 |
+| `systemProperty` | Value of a system-property whose name is set as an {option}.  Ex: %systemProperty{os.version}`.                                                                                                                                                      |
+| `property` | Same as systemProperty.                                                                                                                                                                                                                              |
+| `prop` | Same as systemProperty.                                                                                                                                                                                                                              |
+| `systemEnviron` | Value of a environmental variable whose name is set as an {option}.  Ex: %systemEnviron{SHELL}`.                                                                                                                                                     |
+| `environ` | Same as systemEnviron.                                                                                                                                                                                                                               |
+| `env` | Same as systemEnviron.                                                                                                                                                                                                                               |
+| `ec2MetadataServiceAvailable` | Set this to false if you are running outside of EC2 (i.e. ECS). This will result in `instanceId` and `instanceName` not being set automatically, so you will have to either set them manually, or make sure they are not used in your layout pattern.|
 
 For example:
 
@@ -116,24 +117,23 @@ The appender also adds the support for the previous list of % tokens to be expan
 
 Here is the complete list of the appender properties.
 
-| Property                      | Type | Default | Description                                                                                                                                                                                                                                           |
-|-------------------------------| ---- |---------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `region`                      | *string* | none    | AWS region needed by CloudWatch API                                                                                                                                                                                                                   |
-| `logGroup`                    | *string* | none    | Log group name                                                                                                                                                                                                                                        |
-| `logStream`                   | *string* | none    | Log stream name                                                                                                                                                                                                                                       |
-| `accessKeyId`                 | *string* | none    | AWS API access key ID, see AWS Permissions below.<br />  Code will use ```DefaultAWSCredentialsProviderChain``` by default.                                                                                                                           |
-| `secretKey`                   | *string* | none    | AWS API secret key, see AWS Permissions below.<br />  Code will use ```DefaultAWSCredentialsProviderChain``` by default.                                                                                                                              |
-| `maxBatchSize`                | *int* | 128     | Maximum number of log events put into CloudWatch in single request.                                                                                                                                                                                   |
-| `maxBatchTimeMillis`          | *long* | 5000    | Maximum time in milliseconds to collect log events to submit batch.                                                                                                                                                                                   |
-| `maxQueueWaitTimeMillis`      | *long* | 100     | Maximum time in milliseconds to wait if internal queue is full before using the emergency appender (see below).                                                                                                                                       |
-| `initialWaitTimeMillis`       | *long* | 0       | Initial wait time before logging messages.  Helps if server needs to configure itself initially.                                                                                                                                                      |
-| `internalQueueSize`           | *int* | 8192    | Size of the internal log event queue.                                                                                                                                                                                                                 |
-| `createLogDests`              | *boolean* | true    | Create the CloudWatch log and stream if they don't exist.                                                                                                                                                                                             |
-| `maxEventMessageSize`         | *int* | 256k    | Maximum size of event message before it is truncated or sent to emergency appender.                                                                                                                                                                   |
-| `truncateEventMessages`       | *boolean* | true    | If an event it too large, should the message be truncated.  If false then it will be sent to emergency appender.                                                                                                                                      |
-| `copyEvents`                  | *boolean* | true    | Copies the event for logging by the background thread.                                                                                                                                                                                                |
-| `printRejectedEvents`         | *boolean* | false   | Print any rejected events to stderr if the emergency appender doesn't work.                                                                                                                                                                           |
-| `ec2MetadataServiceAvailable` | *boolean* | true    | Set this to false if you are running outside of EC2 (i.e. ECS). This will result in `instanceId` and `instanceName` not being set automatically, so you will have to either set them manually, or make sure they are not used in your layout pattern. |
+| Property | Type | Default | Description |
+| -------- | ---- | ------- | ----------- |
+| `region` | *string* | none | AWS region needed by CloudWatch API |
+| `logGroup` | *string* | none | Log group name |
+| `logStream` | *string* | none | Log stream name |
+| `accessKeyId` | *string* | none | AWS API access key ID, see AWS Permissions below.<br />  Code will use ```DefaultAWSCredentialsProviderChain``` by default. |
+| `secretKey` | *string* | none | AWS API secret key, see AWS Permissions below.<br />  Code will use ```DefaultAWSCredentialsProviderChain``` by default. |
+| `maxBatchSize` | *int* | 128 | Maximum number of log events put into CloudWatch in single request. |
+| `maxBatchTimeMillis` | *long* | 5000 | Maximum time in milliseconds to collect log events to submit batch. |
+| `maxQueueWaitTimeMillis` | *long* | 100 | Maximum time in milliseconds to wait if internal queue is full before using the emergency appender (see below). |
+| `initialWaitTimeMillis` | *long* | 0 | Initial wait time before logging messages.  Helps if server needs to configure itself initially. |
+| `internalQueueSize` | *int* | 8192 | Size of the internal log event queue. |
+| `createLogDests` | *boolean* | true | Create the CloudWatch log and stream if they don't exist. |
+| `maxEventMessageSize` | *int* | 256k | Maximum size of event message before it is truncated or sent to emergency appender. |
+| `truncateEventMessages` | *boolean* | true | If an event it too large, should the message be truncated.  If false then it will be sent to emergency appender. |
+| `copyEvents` | *boolean* | true | Copies the event for logging by the background thread. |
+| `printRejectedEvents` | *boolean* | false | Print any rejected events to stderr if the emergency appender doesn't work. |
 
 ## Emergency Appender
 
