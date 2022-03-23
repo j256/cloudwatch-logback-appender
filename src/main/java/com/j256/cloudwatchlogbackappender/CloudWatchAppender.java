@@ -486,7 +486,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 				return;
 			}
 
-			List<ILoggingEvent> events = new ArrayList<>(maxBatchSize);
+			List<ILoggingEvent> events = new ArrayList<ILoggingEvent>(maxBatchSize);
 			Thread thread = Thread.currentThread();
 			while (!thread.isInterrupted()) {
 				long batchTimeout = System.currentTimeMillis() + maxBatchTimeMillis;
@@ -522,6 +522,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			 * We have been interrupted so write all of the rest of the events and then quit
 			 */
 
+			events.clear();
 			while (true) {
 				ILoggingEvent event = loggingEventQueue.poll();
 				if (event == null) {
@@ -707,7 +708,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		/**
 		 * This is a hack to work around the problems that were introduced when the appender was compiled with AWS SDK
 		 * version 1.9 or 1.10 but the user was running with version 1.11.
-		 * <p>
+		 *
 		 * The problem was that the createLogStream() method added a return object somewhere between 1.10 and 1.11 which
 		 * broke backwards compatibility and the applications would throw NoSuchMethodError. Using reflection causes the
 		 * linkage to be weaker and seems to work.
