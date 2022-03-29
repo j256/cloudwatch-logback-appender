@@ -116,23 +116,24 @@ The appender also adds the support for the previous list of % tokens to be expan
 
 Here is the complete list of the appender properties.
 
-| Property | Type | Default | Description |
-| -------- | ---- | ------- | ----------- |
-| `region` | *string* | none | AWS region needed by CloudWatch API |
-| `logGroup` | *string* | none | Log group name |
-| `logStream` | *string* | none | Log stream name |
+| Property | Type | Default | Description                                                                                                                 |
+| -------- | ---- | ------- |-----------------------------------------------------------------------------------------------------------------------------|
+| `region` | *string* | none | AWS region needed by CloudWatch API                                                                                         |
+| `logGroup` | *string* | none | Log group name                                                                                                              |
+| `logStream` | *string* | none | Log stream name                                                                                                             |
 | `accessKeyId` | *string* | none | AWS API access key ID, see AWS Permissions below.<br />  Code will use ```DefaultAWSCredentialsProviderChain``` by default. |
-| `secretKey` | *string* | none | AWS API secret key, see AWS Permissions below.<br />  Code will use ```DefaultAWSCredentialsProviderChain``` by default. |
-| `maxBatchSize` | *int* | 128 | Maximum number of log events put into CloudWatch in single request. |
-| `maxBatchTimeMillis` | *long* | 5000 | Maximum time in milliseconds to collect log events to submit batch. |
-| `maxQueueWaitTimeMillis` | *long* | 100 | Maximum time in milliseconds to wait if internal queue is full before using the emergency appender (see below). |
-| `initialWaitTimeMillis` | *long* | 0 | Initial wait time before logging messages.  Helps if server needs to configure itself initially. |
-| `internalQueueSize` | *int* | 8192 | Size of the internal log event queue. |
-| `createLogDests` | *boolean* | true | Create the CloudWatch log and stream if they don't exist. |
-| `maxEventMessageSize` | *int* | 256k | Maximum size of event message before it is truncated or sent to emergency appender. |
-| `truncateEventMessages` | *boolean* | true | If an event it too large, should the message be truncated.  If false then it will be sent to emergency appender. |
-| `copyEvents` | *boolean* | true | Copies the event for logging by the background thread. |
-| `printRejectedEvents` | *boolean* | false | Print any rejected events to stderr if the emergency appender doesn't work. |
+| `secretKey` | *string* | none | AWS API secret key, see AWS Permissions below.<br />  Code will use ```DefaultAWSCredentialsProviderChain``` by default.    |
+| `maxBatchSize` | *int* | 128 | Maximum number of log events put into CloudWatch in single request.                                                         |
+| `maxBatchTimeMillis` | *long* | 5000 | Maximum time in milliseconds to collect log events to submit batch.                                                         |
+| `maxQueueWaitTimeMillis` | *long* | 100 | Maximum time in milliseconds to wait if internal queue is full before using the emergency appender (see below).             |
+| `initialWaitTimeMillis` | *long* | 0 | Initial wait time before logging messages.  Helps if server needs to configure itself initially.                            |
+| `internalQueueSize` | *int* | 8192 | Size of the internal log event queue.                                                                                       |
+| `createLogDests` | *boolean* | true | Create the CloudWatch log and stream if they don't exist.                                                                   |
+| `maxEventMessageSize` | *int* | 256k | Maximum size of event message before it is truncated or sent to emergency appender.                                         |
+| `truncateEventMessages` | *boolean* | true | If an event it too large, should the message be truncated.  If false then it will be sent to emergency appender.            |
+| `copyEvents` | *boolean* | true | Copies the event for logging by the background thread.                                                                      |
+| `printRejectedEvents` | *boolean* | false | Print any rejected events to stderr if the emergency appender doesn't work.                                                 |
+| `flushEventsOnShutdown` | *boolean* | false | Write all remaining events to CloudWatch when JVM is shutting down.                                                         |
 
 ## Emergency Appender
 

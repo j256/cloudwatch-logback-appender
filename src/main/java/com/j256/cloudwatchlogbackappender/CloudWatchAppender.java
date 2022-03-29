@@ -82,6 +82,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	public static final boolean DEFAULT_TRUNCATE_EVENT_MESSAGES = true;
 	public static final boolean DEFAULT_COPY_EVENTS = true;
 	public static final boolean DEFAULT_PRINT_REJECTED_EVENTS = false;
+	public static final boolean DEFAULT_FLUSH_EVENTS_ON_SHUTDOWN = false;
 	public static final Pattern LOG_GROUP_PATTERN = Pattern.compile("[\\.\\-_/#A-Za-z0-9]+");
 
 	private String accessKeyId;
@@ -101,6 +102,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	private boolean truncateEventMessages = DEFAULT_TRUNCATE_EVENT_MESSAGES;
 	private boolean copyEvents = DEFAULT_COPY_EVENTS;
 	private boolean printRejectedEvents = DEFAULT_PRINT_REJECTED_EVENTS;
+	private boolean flushEventsOnShutdown = DEFAULT_FLUSH_EVENTS_ON_SHUTDOWN;
 
 	private AWSLogs awsLogsClient;
 	private AWSLogs testAwsLogsClient;
@@ -325,6 +327,11 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		this.printRejectedEvents = printRejectedEvents;
 	}
 
+	// not required, default is false
+	public void setFlushEventsOnShutdown(boolean flushEventsOnShutdown) {
+		this.flushEventsOnShutdown = flushEventsOnShutdown;
+	}
+
 	// not required, for testing purposes
 	public static void setEc2MetadataServiceOverride(String ec2MetadataServiceOverride) {
 		System.setProperty(SDKGlobalConfiguration.EC2_METADATA_SERVICE_OVERRIDE_SYSTEM_PROPERTY,
@@ -477,27 +484,29 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			final List<ILoggingEvent> events = new ArrayList<ILoggingEvent>(maxBatchSize);
 
 			// Register shutdown hook where we write all remaining events to CloudWatch.
-			Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
-				@Override
-				public void run() {
-					// Poll all rest of the events.
-					while (true) {
-						ILoggingEvent event = loggingEventQueue.poll();
-						if (event == null) {
-							// nothing else waiting
-							break;
+			if (flushEventsOnShutdown) {
+				Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+					@Override
+					public void run() {
+						// Poll all rest of the events.
+						while (true) {
+							ILoggingEvent event = loggingEventQueue.poll();
+							if (event == null) {
+								// nothing else waiting
+								break;
+							}
+							events.add(event);
+							if (events.size() >= maxBatchSize) {
+								CloudWatchWriter.this.writeEvents(events);
+								events.clear();
+							}
 						}
-						events.add(event);
-						if (events.size() >= maxBatchSize) {
+						if (!events.isEmpty()) {
 							CloudWatchWriter.this.writeEvents(events);
-							events.clear();
 						}
 					}
-					if (!events.isEmpty()) {
-						CloudWatchWriter.this.writeEvents(events);
-					}
-				}
-			}));
+				}));
+			}
 
 			Thread thread = Thread.currentThread();
 			while (!thread.isInterrupted()) {
