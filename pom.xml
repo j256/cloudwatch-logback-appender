@@ -23,7 +23,7 @@
 	<properties>
 		<disableDoclint />
 		<!-- optional dependencies -->
-		<logback.version>1.2.10</logback.version>
+		<logback.version>1.4.5</logback.version>
 		<aws-version>1.11.914</aws-version>
 		<!-- test dependencies -->
 		<junit-version>4.13.2</junit-version>
