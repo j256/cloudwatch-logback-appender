@@ -415,8 +415,10 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		newEvent.setLevel(loggingEvent.getLevel());
 		newEvent.setLoggerContextRemoteView(loggingEvent.getLoggerContextVO());
 		newEvent.setLoggerName(loggingEvent.getLoggerName());
-		for (Marker marker : loggingEvent.getMarkerList()) {
-			newEvent.addMarker(marker);
+		if (loggingEvent.getMarkerList() != null) {
+			for (Marker marker : loggingEvent.getMarkerList()) {
+				newEvent.addMarker(marker);
+			}
 		}
 		newEvent.setMDCPropertyMap(loggingEvent.getMDCPropertyMap());
 		if (message == null) {
