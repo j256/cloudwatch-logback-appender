@@ -51,7 +51,6 @@ import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.Layout;
 import ch.qos.logback.core.UnsynchronizedAppenderBase;
 import ch.qos.logback.core.spi.AppenderAttachable;
-import org.slf4j.Marker;
 
 /**
  * CloudWatch log appender for logback.
@@ -415,9 +414,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		newEvent.setLevel(loggingEvent.getLevel());
 		newEvent.setLoggerContextRemoteView(loggingEvent.getLoggerContextVO());
 		newEvent.setLoggerName(loggingEvent.getLoggerName());
-		for (Marker marker : loggingEvent.getMarkerList()) {
-			newEvent.addMarker(marker);
-		}
+		newEvent.setMarker(loggingEvent.getMarker());
 		newEvent.setMDCPropertyMap(loggingEvent.getMDCPropertyMap());
 		if (message == null) {
 			newEvent.setMessage(loggingEvent.getMessage());
