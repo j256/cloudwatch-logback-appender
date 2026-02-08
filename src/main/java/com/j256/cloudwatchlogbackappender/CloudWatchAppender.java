@@ -19,6 +19,7 @@ import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
 import com.amazonaws.services.ec2.model.DescribeTagsRequest;
@@ -79,6 +80,8 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	public static final String AWS_ACCESS_KEY_ID_PROPERTY = "cloudwatchappender.aws.accessKeyId";
 	/** property looked for to find the aws secret-key */
 	public static final String AWS_SECRET_KEY_PROPERTY = "cloudwatchappender.aws.secretKey";
+	/** property looked for to find the aws endpoint-url */
+	public static final String AWS_ENDPOINT_URL_PROPERTY = "cloudwatchappender.aws.endpointUrl";
 	public static final int DEFAULT_MAX_EVENT_MESSAGE_SIZE = 256 * 1024;
 	public static final boolean DEFAULT_TRUNCATE_EVENT_MESSAGES = true;
 	public static final boolean DEFAULT_COPY_EVENTS = true;
@@ -87,6 +90,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 
 	private String accessKeyId;
 	private String secretKey;
+	private String endpointUrl;
 	private String region;
 	private String logGroupName;
 	private String logStreamName;
@@ -240,6 +244,11 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	// not-required, default is to use the DefaultAWSCredentialsProviderChain
 	public void setSecretKey(String secretKey) {
 		this.secretKey = secretKey;
+	}
+
+	// not-required, used for localstack only
+	public void setEndpointUrl(String endpointUrl) {
+		this.endpointUrl = endpointUrl;
 	}
 
 	// required
@@ -618,6 +627,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 				// try to use our class properties
 				accessKeyId = System.getProperty(AWS_ACCESS_KEY_ID_PROPERTY);
 				secretKey = System.getProperty(AWS_SECRET_KEY_PROPERTY);
+				endpointUrl = System.getProperty(AWS_ENDPOINT_URL_PROPERTY);
 			}
 			if (MiscUtils.isBlank(accessKeyId)) {
 				// if we are still blank then use the default credentials provider
@@ -627,7 +637,13 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			}
 			AWSLogs client;
 			if (testAwsLogsClient == null) {
-				client = AWSLogsClientBuilder.standard().withCredentials(credentialProvider).withRegion(region).build();
+				if(MiscUtils.isBlank(endpointUrl)) {
+					client = AWSLogsClientBuilder.standard().withCredentials(credentialProvider).withRegion(region).build();
+				} else {
+					client = AWSLogsClientBuilder.standard().withCredentials(credentialProvider)
+							.withEndpointConfiguration(new EndpointConfiguration(endpointUrl, region))
+							.build();
+				}
 			} else {
 				client = testAwsLogsClient;
 			}
