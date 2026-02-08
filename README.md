@@ -1,47 +1,21 @@
 Logback log appender for AWS CloudWatch
 =======================================
 
+[![Maven Central](https://img.shields.io/maven-central/v/com.j256.cloudwatchlogbackappender/cloudwatchlogbackappender?style=flat-square)](https://mvnrepository.com/artifact/com.j256.cloudwatchlogbackappender/cloudwatchlogbackappender/latest)
+[![javadoc](https://javadoc.io/badge2/com.j256.cloudwatchlogbackappender/cloudwatchlogbackappender/javadoc.svg)](https://javadoc.io/doc/com.j256.cloudwatchlogbackappender/cloudwatchlogbackappender)
+[![CircleCI](https://circleci.com/gh/j256/cloudwatch-logback-appender.svg?style=svg)](https://circleci.com/gh/j256/cloudwatch-logback-appender) [![CodeCov](https://img.shields.io/codecov/c/github/j256/cloudwatch-logback-appender.svg)](https://codecov.io/github/j256/cloudwatch-logback-appender/)
+
 # Background
 
 This package provides a logback appender that writes its log events to Cloudwatch.  Before you say it,
 there seem to be many projects like this out there but I could find none of them that were
 self-contained and that were published to the central Maven repo.
 
-* Code available from the [git repository](https://github.com/j256/cloudwatch-logback-appender).  [![CircleCI](https://circleci.com/gh/j256/cloudwatch-logback-appender.svg?style=svg)](https://circleci.com/gh/j256/cloudwatch-logback-appender) [![CodeCov](https://img.shields.io/codecov/c/github/j256/cloudwatch-logback-appender.svg)](https://codecov.io/github/j256/cloudwatch-logback-appender/)
-* Maven packages are published via [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.j256.cloudwatchlogbackappender/cloudwatchlogbackappender/badge.svg?style=flat-square)](https://maven-badges.herokuapp.com/maven-central/com.j256.cloudwatchlogbackappender/cloudwatchlogbackappender/) [![javadoc](https://javadoc.io/badge2/com.j256.cloudwatchlogbackappender/cloudwatchlogbackappender/javadoc.svg)](https://javadoc.io/doc/com.j256.cloudwatchlogbackappender/cloudwatchlogbackappender)
+* Code available from the [git repository](https://github.com/j256/cloudwatch-logback-appender).
+* Maven packages are published via [Maven Central](https://mvnrepository.com/artifact/com.j256.cloudwatchlogbackappender/cloudwatchlogbackappender/latest)
+* Documentation: [javadoc files](https://javadoc.io/doc/com.j256.cloudwatchlogbackappender/cloudwatchlogbackappender)
 
 Enjoy. Gray Watson
-
-# Maven Configuration
-
-``` xml
-<dependencies>
-	<dependency>
-		<groupId>com.j256.cloudwatchlogbackappender</groupId>
-		<artifactId>cloudwatchlogbackappender</artifactId>
-		<!-- NOTE: change the version to the most recent release version from the repo -->
-		<version>2.0</version>
-	</dependency>
-</dependencies>
-```
-
-## Dependencies
-
-By default the appender has dependencies on logback (duh) but also the log (cloudwatch) and ec2 AWS SDK
-packages.  You can add a exclusion for these packages if you want to depend on different versions.
-
-``` xml
-<dependency>
-	<groupId>com.amazonaws</groupId>
-	<artifactId>aws-java-sdk-logs</artifactId>
-	<version>1.11.914</version>
-</dependency>
-<dependency>
-	<groupId>com.amazonaws</groupId>
-	<artifactId>aws-java-sdk-ec2</artifactId>
-	<version>1.11.914</version>
-</dependency>
-```
 
 # logback.xml Configuration
 
@@ -202,6 +176,44 @@ if you want the appender to query for the ec2 instance name it is on – see `Ec
 I couldn't figure out how to restrict to all ec2 instances.  If you are only doing log requests then
 you should be able to limit it to the resource `arn:aws:logs:*:*:*`.
 
+# Maven Configuration
+
+Maven packages are published via [Maven Central](https://mvnrepository.com/artifact/com.j256.simplejmx/simplejmx/latest)
+
+``` xml
+<dependencies>
+	<dependency>
+		<groupId>com.j256.cloudwatchlogbackappender</groupId>
+		<artifactId>cloudwatchlogbackappender</artifactId>
+		<!-- NOTE: change the version to the most recent release version from the repo -->
+		<version>2.0</version>
+	</dependency>
+</dependencies>
+```
+
+## Dependencies
+
+By default the appender has dependencies on logback (duh) but also the log (cloudwatch) and ec2 AWS SDK
+packages.  You can add a exclusion for these packages if you want to depend on different versions.
+
+``` xml
+<dependency>
+	<groupId>com.amazonaws</groupId>
+	<artifactId>aws-java-sdk-logs</artifactId>
+	<version>1.11.914</version>
+</dependency>
+<dependency>
+	<groupId>com.amazonaws</groupId>
+	<artifactId>aws-java-sdk-ec2</artifactId>
+	<version>1.11.914</version>
+</dependency>
+```
+
+# Simple Logging Package
+
+Another logging package that you might be interested in is my [SimpleLogging](https://github.com/j256/simplelogging).
+It provides functionality similar to SLF4J but with backend support for a large number of logger implementations.
+
 # ChangeLog Release Notes
 
-See the [ChangeLog.txt file](src/main/javadoc/doc-files/changelog.txt).
+See the [ChangeLog file](src/main/javadoc/doc-files/changelog.txt).
