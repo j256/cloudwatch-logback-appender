@@ -722,6 +722,9 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		}
 
 		private void lookupInstanceName(AWSCredentialsProvider credentialProvider) {
+			if (SDKGlobalConfiguration.isEc2MetadataDisabled()) {
+				return;
+			}
 			String instanceId = EC2MetadataUtils.getInstanceId();
 			if (instanceId == null) {
 				return;
