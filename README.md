@@ -106,6 +106,7 @@ Here is the complete list of the appender properties.
 | `copyEvents` | *boolean* | true | Copies the event for logging by the background thread. |
 | `printRejectedEvents` | *boolean* | false | Print any rejected events to stderr if the emergency appender doesn't work. |
 | `disableEc2Metadata` | *boolean* | false | Don't try to lookup any EC2 metadata.  Set the instance-name to local hostname. |
+| `retentionDays` | *int* | none | Optional retention period in days to add the log-group.  Default is none. |
 
 ## Emergency Appender
 
