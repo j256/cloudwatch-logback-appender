@@ -406,7 +406,6 @@ public class CloudWatchAppenderTest {
 		appender.setTestAmazonEc2Client(ec2Client);
 
 		appender.setMaxBatchSize(1);
-		appender.setRegion("region");
 		final String logGroup = "pfqoejpfqe";
 		appender.setLogGroup(logGroup);
 		final String logStream = "pffqjfqjpoqoejpfqe";
@@ -457,11 +456,9 @@ public class CloudWatchAppenderTest {
 		// for coverage
 		appender.start();
 		appender.append(event);
-		Thread.sleep(100);
+		Thread.sleep(300);
 		appender.append(event);
-		while (appender.getEventsWrittenCount() < 2) {
-			Thread.sleep(100);
-		}
+		Thread.sleep(300);
 		appender.stop();
 		verify(logsClient, ec2Client);
 	}

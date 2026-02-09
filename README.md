@@ -42,10 +42,10 @@ adds support for additional tokens:
 
 | Property | Description |
 | -------- | ----------- |
-| `instanceName` | Name of the EC2 instance or ID if the name is not available. |
+| `instanceName` | Name of the instance or ID if the name is not available. |
 | `instance` | Same as instanceName. |
 | `in` | Same as instanceName. |
-| `instanceId` | ID of the EC2 instance. |
+| `instanceId` | ID of the EC2 instance if available. |
 | `iid` | Same as instanceId. |
 | `uuid` | Random UUID as a string |
 | `hostName` | Name of the host from `InetAddress.getLocalHost()`. |
@@ -92,11 +92,9 @@ Here is the complete list of the appender properties.
 
 | Property | Type | Default | Description |
 | -------- | ---- | ------- | ----------- |
-| `region` | *string* | none | AWS region needed by CloudWatch API |
+| `region` | *string* | none | AWS region for the CloudWatch API.  It not specified the SDK will try to figure it out. |
 | `logGroup` | *string* | none | Log group name |
 | `logStream` | *string* | none | Log stream name |
-| `accessKeyId` | *string* | none | AWS API access key ID, see AWS Permissions below.<br />  Code will use ```DefaultAWSCredentialsProviderChain``` by default. |
-| `secretKey` | *string* | none | AWS API secret key, see AWS Permissions below.<br />  Code will use ```DefaultAWSCredentialsProviderChain``` by default. |
 | `maxBatchSize` | *int* | 128 | Maximum number of log events put into CloudWatch in single request. |
 | `maxBatchTimeMillis` | *long* | 5000 | Maximum time in milliseconds to collect log events to submit batch. |
 | `maxQueueWaitTimeMillis` | *long* | 100 | Maximum time in milliseconds to wait if internal queue is full before using the emergency appender (see below). |
@@ -107,6 +105,7 @@ Here is the complete list of the appender properties.
 | `truncateEventMessages` | *boolean* | true | If an event it too large, should the message be truncated.  If false then it will be sent to emergency appender. |
 | `copyEvents` | *boolean* | true | Copies the event for logging by the background thread. |
 | `printRejectedEvents` | *boolean* | false | Print any rejected events to stderr if the emergency appender doesn't work. |
+| `disableEc2Metadata` | *boolean* | false | Don't try to lookup any EC2 metadata.  Set the instance-name to local hostname. |
 
 ## Emergency Appender
 
