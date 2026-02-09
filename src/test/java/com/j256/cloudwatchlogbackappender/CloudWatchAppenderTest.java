@@ -405,7 +405,8 @@ public class CloudWatchAppenderTest {
 
 	@Test(timeout = 10000)
 	public void testMoreAwsCalls() throws InterruptedException {
-		System.err.println(System.currentTimeMillis() + ": starting test more xxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+		System.err.println(System.currentTimeMillis() + ":" + Thread.currentThread()
+				+ ": starting test more xxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
 		CloudWatchAppender appender = new CloudWatchAppender();
 		CloudWatchLogsClient logsClient = createMock(CloudWatchLogsClient.class);
 		Ec2Client ec2Client = createMock(Ec2Client.class);
@@ -414,6 +415,7 @@ public class CloudWatchAppenderTest {
 		appender.setInitialWaitTimeMillis(300);
 
 		appender.setMaxBatchSize(1);
+		appender.setMaxBatchTimeMillis(100);
 		appender.setRegion("region");
 		final String logGroup = "pfqoejpfqe";
 		appender.setLogGroup(logGroup);
@@ -466,11 +468,11 @@ public class CloudWatchAppenderTest {
 		// =====================================
 
 		replay(logsClient, ec2Client);
-		System.err.println(System.currentTimeMillis() + ": starting");
+		System.err.println(System.currentTimeMillis() + ":" + Thread.currentThread() + ": starting");
 		appender.start();
 		// for coverage
 		appender.start();
-		System.err.println(System.currentTimeMillis() + ": started");
+		System.err.println(System.currentTimeMillis() + ":" + Thread.currentThread() + ": started");
 		for (int i = 0; i < numTimes; i++) {
 			Thread.sleep(300);
 			appender.append(event);
@@ -478,16 +480,19 @@ public class CloudWatchAppenderTest {
 		try {
 			while (messageCount.get() < numTimes) {
 				Thread.sleep(100);
-				System.err.println(System.currentTimeMillis() + ": message-count is " + messageCount);
+				System.err.println(System.currentTimeMillis() + ":" + Thread.currentThread() + ": message-count is "
+						+ messageCount);
 			}
 		} finally {
-			System.err.println(System.currentTimeMillis() + ": out of while loop: " + messageCount);
+			System.err.println(
+					System.currentTimeMillis() + ":" + Thread.currentThread() + ": out of while loop: " + messageCount);
 		}
-		System.err.println(System.currentTimeMillis() + ": stopping the appender");
+		System.err.println(System.currentTimeMillis() + ":" + Thread.currentThread() + ": stopping the appender");
 		appender.stop();
-		System.err.println(System.currentTimeMillis() + ": stopped the appender");
+		System.err.println(System.currentTimeMillis() + ":" + Thread.currentThread() + ": stopped the appender");
 		verify(logsClient, ec2Client);
-		System.err.println(System.currentTimeMillis() + ": done with test more xxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+		System.err.println(System.currentTimeMillis() + ":" + Thread.currentThread()
+				+ ": done with test more xxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
 	}
 
 	@Test(timeout = 10000)

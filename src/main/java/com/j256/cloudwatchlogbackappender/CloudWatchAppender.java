@@ -149,14 +149,14 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 
 		loggingEventQueue = new ArrayBlockingQueue<ILoggingEvent>(internalQueueSize);
 
-		System.err.println(System.currentTimeMillis() + ": starting thread");
+		System.err.println(System.currentTimeMillis() + ":" + Thread.currentThread()+ ": starting thread");
 
 		// create our writer thread in the background
 		cloudWatchWriterThread = new Thread(new CloudWatchWriter(), getClass().getSimpleName());
 		cloudWatchWriterThread.setDaemon(true);
 		cloudWatchWriterThread.start();
 
-		System.err.println(System.currentTimeMillis() + ": started thread");
+		System.err.println(System.currentTimeMillis() + ":" + Thread.currentThread()+ ": started thread");
 
 		if (emergencyAppender != null && !emergencyAppender.isStarted()) {
 			emergencyAppender.start();
@@ -227,11 +227,11 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		}
 
 		try {
-			System.err.println(System.currentTimeMillis() + ": offering message to queue");
+			System.err.println(System.currentTimeMillis() + ":" + Thread.currentThread()+ ": offering message to queue");
 			if (loggingEventQueue.offer(loggingEvent, maxQueueWaitTimeMillis, TimeUnit.MILLISECONDS)) {
-				System.err.println("offered message to queue");
+				System.err.println(System.currentTimeMillis() + ":" + Thread.currentThread()+ ": offered message to queue");
 			} else {
-				System.err.println(System.currentTimeMillis() + ": offering message to queue failed");
+				System.err.println(System.currentTimeMillis()+ ":" + Thread.currentThread() + ": offering message to queue failed");
 				appendToEmergencyAppender(loggingEvent);
 			}
 		} catch (InterruptedException e) {
@@ -503,16 +503,17 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 					}
 					ILoggingEvent loggingEvent;
 					try {
-						System.err.println(System.currentTimeMillis() + ": polling for events");
+						System.err.println(System.currentTimeMillis()+ ":" + Thread.currentThread() + ": polling for events");
 						loggingEvent = loggingEventQueue.poll(timeoutMillis, TimeUnit.MILLISECONDS);
-						System.err.println(System.currentTimeMillis() + ": got event");
+						System.err.println(System.currentTimeMillis() + ":" + Thread.currentThread()+ ": got event");
 					} catch (InterruptedException ex) {
 						Thread.currentThread().interrupt();
 						break;
 					}
 					if (loggingEvent == null) {
 						// wait timed out
-						System.err.println(System.currentTimeMillis() + ": polling for events timed out");
+						System.err.println(System.currentTimeMillis() + ":" + Thread.currentThread()
+								+ ": polling for events timed out");
 						break;
 					}
 					events.add(loggingEvent);
@@ -553,7 +554,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 
 		private void writeEvents(List<ILoggingEvent> events) {
 
-			System.err.println(System.currentTimeMillis() + ": writing " + events.size() + " events");
+			System.err.println(System.currentTimeMillis() + ":" + Thread.currentThread()+ ": writing " + events.size() + " events");
 
 			if (!initialized) {
 				initialized = true;
@@ -573,7 +574,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 				}
 				if (exception != null) {
 					appendEvent(Level.ERROR, "Problems initializing cloudwatch writer", exception);
-					System.err.println(System.currentTimeMillis() + ": probmes initializing");
+					System.err.println(System.currentTimeMillis()+ ":" + Thread.currentThread() + ": probmes initializing");
 				}
 			}
 
@@ -599,7 +600,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 
 				for (int i = 0; i < PUT_REQUEST_RETRY_COUNT; i++) {
 					try {
-						System.err.println(System.currentTimeMillis() + ": making request");
+						System.err.println(System.currentTimeMillis() + ":" + Thread.currentThread()+ ": making request");
 						PutLogEventsRequest.Builder builder = PutLogEventsRequest.builder()
 								.logGroupName(logGroupName)
 								.logStreamName(logStreamName)
@@ -611,7 +612,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 						sequenceToken = result.nextSequenceToken();
 						exception = null;
 						eventsWrittenCount += logEvents.size();
-						System.err.println(System.currentTimeMillis() + ": request made for " + logEvents.size());
+						System.err.println(System.currentTimeMillis() + ":" + Thread.currentThread()+ ": request made for " + logEvents.size());
 						break;
 					} catch (InvalidSequenceTokenException iste) {
 						exception = iste;
