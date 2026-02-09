@@ -149,10 +149,14 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 
 		loggingEventQueue = new ArrayBlockingQueue<ILoggingEvent>(internalQueueSize);
 
+		System.err.println(System.currentTimeMillis() + ": starting thread");
+
 		// create our writer thread in the background
 		cloudWatchWriterThread = new Thread(new CloudWatchWriter(), getClass().getSimpleName());
 		cloudWatchWriterThread.setDaemon(true);
 		cloudWatchWriterThread.start();
+
+		System.err.println(System.currentTimeMillis() + ": started thread");
 
 		if (emergencyAppender != null && !emergencyAppender.isStarted()) {
 			emergencyAppender.start();

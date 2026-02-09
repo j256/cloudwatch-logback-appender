@@ -468,7 +468,9 @@ public class CloudWatchAppenderTest {
 		replay(logsClient, ec2Client);
 		appender.start();
 		// for coverage
+		System.err.println(System.currentTimeMillis() + ": starting");
 		appender.start();
+		System.err.println(System.currentTimeMillis() + ": started");
 		for (int i = 0; i < numTimes; i++) {
 			Thread.sleep(300);
 			appender.append(event);
