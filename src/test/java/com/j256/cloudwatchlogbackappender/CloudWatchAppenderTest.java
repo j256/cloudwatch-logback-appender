@@ -479,7 +479,7 @@ public class CloudWatchAppenderTest {
 				System.err.println("message-count is " + messageCount);
 			}
 		} finally {
-			System.err.println("out of while loop");
+			System.err.println("out of while loop: " + messageCount);
 		}
 		System.err.println("stopping the appender");
 		appender.stop();
