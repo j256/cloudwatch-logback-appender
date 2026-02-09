@@ -568,11 +568,13 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 				try {
 					stopMessagesThreadLocal.set(true);
 					if (awsLogsClient == null) {
-						System.err.println(System.currentTimeMillis() + ":" + Thread.currentThread() + ": creating logs client");
+						System.err.println(
+								System.currentTimeMillis() + ":" + Thread.currentThread() + ": creating logs client");
 						createLogsClient();
 					} else {
 						// mostly here for testing
-						System.err.println(System.currentTimeMillis() + ":" + Thread.currentThread() + ": building stream name");
+						System.err.println(
+								System.currentTimeMillis() + ":" + Thread.currentThread() + ": building stream name");
 						logStreamName = buildLogStreamName();
 					}
 				} catch (Exception e) {
@@ -651,6 +653,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 
 		private void createLogsClient() {
 			CloudWatchLogsClient client;
+			System.err.println(System.currentTimeMillis() + ":" + Thread.currentThread() + ": building logs client");
 			if (testAwsLogsClient == null) {
 				CloudWatchLogsClientBuilder builder = CloudWatchLogsClient.builder().region(region);
 				if (endpointUrl != null) {
@@ -660,13 +663,16 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			} else {
 				client = testAwsLogsClient;
 			}
+			System.err.println(System.currentTimeMillis() + ":" + Thread.currentThread() + ": built logs client");
 			try {
 				assignInstanceName();
 			} catch (Exception e) {
 				appendEvent(Level.ERROR, "Problems looking up instance-name", e);
 			}
 			logStreamName = buildLogStreamName();
+			System.err.println(System.currentTimeMillis() + ":" + Thread.currentThread() + ": verifying group");
 			verifyLogGroupExists(client);
+			System.err.println(System.currentTimeMillis() + ":" + Thread.currentThread() + ": verifying stream");
 			verifyLogStreamExists(client);
 			awsLogsClient = client;
 		}
