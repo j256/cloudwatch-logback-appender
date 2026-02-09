@@ -171,11 +171,13 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			return;
 		}
 
-		cloudWatchWriterThread.interrupt();
-		try {
-			cloudWatchWriterThread.join(1000);
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
+		if (cloudWatchWriterThread != null) {
+			cloudWatchWriterThread.interrupt();
+			try {
+				cloudWatchWriterThread.join(1000);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
 		}
 		if (awsLogsClient != null) {
 			awsLogsClient.close();
