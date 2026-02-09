@@ -87,18 +87,20 @@ public class CloudWatchAppenderTest {
 
 		String sequence = "ewopjfewfj";
 		final PutLogEventsResponse result = PutLogEventsResponse.builder().nextSequenceToken(sequence).build();
-		expect(awsLogClient.putLogEvents(isA(PutLogEventsRequest.class))).andAnswer(new IAnswer<PutLogEventsResponse>() {
-			@Override
-			public PutLogEventsResponse answer() {
-				PutLogEventsRequest request = (PutLogEventsRequest) getCurrentArguments()[0];
-				assertEquals(logGroup, request.logGroupName());
-				assertEquals(logStream, request.logStreamName());
-				List<InputLogEvent> events = request.logEvents();
-				assertEquals(1, events.size());
-				assertEquals(fullMessage, events.get(0).message());
-				return result;
-			}
-		}).times(2);
+		expect(awsLogClient.putLogEvents(isA(PutLogEventsRequest.class)))
+				.andAnswer(new IAnswer<PutLogEventsResponse>() {
+					@Override
+					public PutLogEventsResponse answer() {
+						PutLogEventsRequest request = (PutLogEventsRequest) getCurrentArguments()[0];
+						assertEquals(logGroup, request.logGroupName());
+						assertEquals(logStream, request.logStreamName());
+						List<InputLogEvent> events = request.logEvents();
+						assertEquals(1, events.size());
+						assertEquals(fullMessage, events.get(0).message());
+						return result;
+					}
+				})
+				.times(2);
 		awsLogClient.close();
 
 		// =====================================
@@ -137,16 +139,18 @@ public class CloudWatchAppenderTest {
 		appender.setLayout(layout);
 
 		String sequence = "ewopjfewfj";
-		final PutLogEventsResponse result =  PutLogEventsResponse.builder().nextSequenceToken(sequence).build();
-		expect(awsLogClient.putLogEvents(isA(PutLogEventsRequest.class))).andAnswer(new IAnswer<PutLogEventsResponse>() {
-			@Override
-			public PutLogEventsResponse answer() {
-				PutLogEventsRequest request = (PutLogEventsRequest) getCurrentArguments()[0];
-				assertEquals(logGroup, request.logGroupName());
-				assertEquals(logStream, request.logStreamName());
-				return result;
-			}
-		}).anyTimes();
+		final PutLogEventsResponse result = PutLogEventsResponse.builder().nextSequenceToken(sequence).build();
+		expect(awsLogClient.putLogEvents(isA(PutLogEventsRequest.class)))
+				.andAnswer(new IAnswer<PutLogEventsResponse>() {
+					@Override
+					public PutLogEventsResponse answer() {
+						PutLogEventsRequest request = (PutLogEventsRequest) getCurrentArguments()[0];
+						assertEquals(logGroup, request.logGroupName());
+						assertEquals(logStream, request.logStreamName());
+						return result;
+					}
+				})
+				.anyTimes();
 		awsLogClient.close();
 
 		// =====================================
@@ -317,19 +321,20 @@ public class CloudWatchAppenderTest {
 				"[" + threadName + "] " + level + " " + loggerName + " - " + message.substring(0, maxSize) + "\n";
 
 		String sequence = "ewopjfewfj";
-		final PutLogEventsResponse result =  PutLogEventsResponse.builder().nextSequenceToken(sequence).build();
-		expect(awsLogClient.putLogEvents(isA(PutLogEventsRequest.class))).andAnswer(new IAnswer<PutLogEventsResponse>() {
-			@Override
-			public PutLogEventsResponse answer() {
-				PutLogEventsRequest request = (PutLogEventsRequest) getCurrentArguments()[0];
-				assertEquals(logGroup, request.logGroupName());
-				assertEquals(logStream, request.logStreamName());
-				List<InputLogEvent> events = request.logEvents();
-				assertEquals(1, events.size());
-				assertEquals(fullMessage, events.get(0).message());
-				return result;
-			}
-		});
+		final PutLogEventsResponse result = PutLogEventsResponse.builder().nextSequenceToken(sequence).build();
+		expect(awsLogClient.putLogEvents(isA(PutLogEventsRequest.class)))
+				.andAnswer(new IAnswer<PutLogEventsResponse>() {
+					@Override
+					public PutLogEventsResponse answer() {
+						PutLogEventsRequest request = (PutLogEventsRequest) getCurrentArguments()[0];
+						assertEquals(logGroup, request.logGroupName());
+						assertEquals(logStream, request.logStreamName());
+						List<InputLogEvent> events = request.logEvents();
+						assertEquals(1, events.size());
+						assertEquals(fullMessage, events.get(0).message());
+						return result;
+					}
+				});
 		awsLogClient.close();
 
 		// =====================================
@@ -377,8 +382,8 @@ public class CloudWatchAppenderTest {
 		appender.setMaxEventMessageSize(maxSize);
 		appender.setTruncateEventMessages(false);
 
-//		String sequence = "ewopjfewfj";
-//		final PutLogEventsResponse result =  PutLogEventsResponse.builder().nextSequenceToken(sequence).build();
+		// String sequence = "ewopjfewfj";
+		// final PutLogEventsResponse result = PutLogEventsResponse.builder().nextSequenceToken(sequence).build();
 		awsLogClient.close();
 
 		// =====================================
@@ -400,7 +405,7 @@ public class CloudWatchAppenderTest {
 
 	@Test(timeout = 10000)
 	public void testMoreAwsCalls() throws InterruptedException {
-		System.out.println("starting test more xxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+		System.err.println("starting test more xxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
 		CloudWatchAppender appender = new CloudWatchAppender();
 		CloudWatchLogsClient logsClient = createMock(CloudWatchLogsClient.class);
 		Ec2Client ec2Client = createMock(Ec2Client.class);
@@ -430,16 +435,18 @@ public class CloudWatchAppenderTest {
 		String threadName = Thread.currentThread().getName();
 		final String fullMessage = "[" + threadName + "] " + level + " " + loggerName + " - " + message + "\n";
 
-		DescribeLogGroupsResponse logGroupsResult =
-				DescribeLogGroupsResponse.builder().logGroups(LogGroup.builder().logGroupName(logGroup).build()).build();
+		DescribeLogGroupsResponse logGroupsResult = DescribeLogGroupsResponse.builder()
+				.logGroups(LogGroup.builder().logGroupName(logGroup).build())
+				.build();
 		expect(logsClient.describeLogGroups(isA(DescribeLogGroupsRequest.class))).andReturn(logGroupsResult);
 
-		DescribeLogStreamsResponse logStreamsResult = DescribeLogStreamsResponse.builder().logStreams(
-				LogStream.builder().logStreamName(logStream).build()).build();
+		DescribeLogStreamsResponse logStreamsResult = DescribeLogStreamsResponse.builder()
+				.logStreams(LogStream.builder().logStreamName(logStream).build())
+				.build();
 		expect(logsClient.describeLogStreams(isA(DescribeLogStreamsRequest.class))).andReturn(logStreamsResult);
 
 		String sequence = "ewopjfewfj";
-		final PutLogEventsResponse result =  PutLogEventsResponse.builder().nextSequenceToken(sequence).build();
+		final PutLogEventsResponse result = PutLogEventsResponse.builder().nextSequenceToken(sequence).build();
 		final AtomicInteger messageCount = new AtomicInteger();
 		expect(logsClient.putLogEvents(isA(PutLogEventsRequest.class))).andAnswer(new IAnswer<PutLogEventsResponse>() {
 			@Override
@@ -466,15 +473,19 @@ public class CloudWatchAppenderTest {
 			Thread.sleep(300);
 			appender.append(event);
 		}
-		while (messageCount.get() < numTimes) {
-			Thread.sleep(100);
-			System.out.println("message-count is " + messageCount);
+		try {
+			while (messageCount.get() < numTimes) {
+				Thread.sleep(100);
+				System.err.println("message-count is " + messageCount);
+			}
+		} finally {
+			System.err.println("out of while loop");
 		}
-		System.out.println("stopping the appender");
+		System.err.println("stopping the appender");
 		appender.stop();
-		System.out.println("stopped the appender");
+		System.err.println("stopped the appender");
 		verify(logsClient, ec2Client);
-		System.out.println("done with test more xxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+		System.err.println("done with test more xxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
 	}
 
 	@Test(timeout = 10000)
@@ -521,7 +532,7 @@ public class CloudWatchAppenderTest {
 		expect(logsClient.createLogStream(isA(CreateLogStreamRequest.class))).andReturn(createLogStreamResult);
 
 		String sequence = "ewopjfewfj";
-		final PutLogEventsResponse result =  PutLogEventsResponse.builder().nextSequenceToken(sequence).build();
+		final PutLogEventsResponse result = PutLogEventsResponse.builder().nextSequenceToken(sequence).build();
 		expect(logsClient.putLogEvents(isA(PutLogEventsRequest.class))).andAnswer(new IAnswer<PutLogEventsResponse>() {
 			@Override
 			public PutLogEventsResponse answer() {
