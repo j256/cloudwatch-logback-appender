@@ -572,9 +572,9 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			}
 
 			// we need this in case our RPC calls create log output which we don't want to then log again
-			stopMessagesThreadLocal.set(true);
 			Exception exception = null;
 			try {
+				stopMessagesThreadLocal.set(true);
 				List<InputLogEvent> logEvents = new ArrayList<>(events.size());
 				for (ILoggingEvent event : events) {
 					String message = layout.doLayout(event);

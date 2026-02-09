@@ -470,7 +470,9 @@ public class CloudWatchAppenderTest {
 			Thread.sleep(100);
 			System.out.println("message-count is " + messageCount);
 		}
+		System.out.println("stopping the appender");
 		appender.stop();
+		System.out.println("stopped the appender");
 		verify(logsClient, ec2Client);
 		System.out.println("done with test more xxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
 	}
