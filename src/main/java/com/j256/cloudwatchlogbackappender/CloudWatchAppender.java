@@ -43,6 +43,7 @@ import software.amazon.awssdk.services.cloudwatchlogs.model.LogGroup;
 import software.amazon.awssdk.services.cloudwatchlogs.model.LogStream;
 import software.amazon.awssdk.services.cloudwatchlogs.model.PutLogEventsRequest;
 import software.amazon.awssdk.services.cloudwatchlogs.model.PutLogEventsResponse;
+import software.amazon.awssdk.services.cloudwatchlogs.model.PutRetentionPolicyRequest;
 import software.amazon.awssdk.services.ec2.Ec2Client;
 import software.amazon.awssdk.services.ec2.model.DescribeTagsRequest;
 import software.amazon.awssdk.services.ec2.model.DescribeTagsResponse;
@@ -100,6 +101,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	private boolean copyEvents = DEFAULT_COPY_EVENTS;
 	private boolean printRejectedEvents = DEFAULT_PRINT_REJECTED_EVENTS;
 	private boolean disableEc2Metadata;
+	private int retentionDays;
 
 	private CloudWatchLogsClient awsLogsClient;
 	private CloudWatchLogsClient testAwsLogsClient;
@@ -330,6 +332,10 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		this.disableEc2Metadata = disableEc2Metadata;
 	}
 
+	public void setRetentionDays(int retentionDays) {
+		this.retentionDays = retentionDays;
+	}
+
 	/**
 	 * For testing purposes, set the EC2 service override property to the following hostname. Can be "localhost".
 	 */
@@ -489,6 +495,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 					}
 					ILoggingEvent loggingEvent;
 					try {
+						System.out.println("polling for events");
 						loggingEvent = loggingEventQueue.poll(timeoutMillis, TimeUnit.MILLISECONDS);
 					} catch (InterruptedException ex) {
 						Thread.currentThread().interrupt();
@@ -496,6 +503,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 					}
 					if (loggingEvent == null) {
 						// wait timed out
+						System.out.println("polling for events timed out");
 						break;
 					}
 					events.add(loggingEvent);
@@ -648,6 +656,13 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 				CreateLogGroupRequest createRequest =
 						CreateLogGroupRequest.builder().logGroupName(logStreamName).build();
 				client.createLogGroup(createRequest);
+				if (retentionDays > 0) {
+					PutRetentionPolicyRequest retentionRequest = PutRetentionPolicyRequest.builder()
+							.logGroupName(logGroupName)
+							.retentionInDays(retentionDays)
+							.build();
+					client.putRetentionPolicy(retentionRequest);
+				}
 			} else {
 				appendEvent(Level.WARN, "Log-group '" + logGroupName + "' doesn't exist and not created", null);
 			}

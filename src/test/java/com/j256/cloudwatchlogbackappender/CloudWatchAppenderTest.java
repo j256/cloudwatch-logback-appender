@@ -400,6 +400,7 @@ public class CloudWatchAppenderTest {
 
 	@Test(timeout = 10000)
 	public void testMoreAwsCalls() throws InterruptedException {
+		System.out.println("starting test more xxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
 		CloudWatchAppender appender = new CloudWatchAppender();
 		CloudWatchLogsClient logsClient = createMock(CloudWatchLogsClient.class);
 		Ec2Client ec2Client = createMock(Ec2Client.class);
@@ -467,9 +468,11 @@ public class CloudWatchAppenderTest {
 		}
 		while (messageCount.get() < numTimes) {
 			Thread.sleep(100);
+			System.out.println("message-count is " + messageCount);
 		}
 		appender.stop();
 		verify(logsClient, ec2Client);
+		System.out.println("done with test more xxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
 	}
 
 	@Test(timeout = 10000)

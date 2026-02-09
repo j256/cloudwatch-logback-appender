@@ -33,12 +33,12 @@ Minimal logback appender configuration:
 </appender>
 ```
 
-Cloudwatch unfortunately does not allow multiple hosts to write to the same log-stream.  If multiple servers are writing
-logs, you should configure the log-stream name with an instance-name suffix or something.  The `logStream` name setting
-uses the `Ec2PatternLayout` to generate the name, which can also be used to format your log lines.  This allows you to
-use the standard `%token` such as `%date` in the name of the log-stream – see the
-[logback documentation](http://logback.qos.ch/manual/layouts.html#conversionWord).  The `Ec2PatternLayout` class also
-adds support for additional tokens:
+CloudWatch unfortunately does not allow multiple hosts to write to the same log-stream because of the sequence-token
+to get correct ordering.  If multiple servers are writing logs, you should configure the log-stream name with an
+instance-name suffix or something.  The `logStream` name setting uses the `Ec2PatternLayout` to generate the name, which
+can also be used to format your log lines.  This allows you to use the standard `%token` such as `%date` in the name of
+the log-stream – see the [logback documentation](http://logback.qos.ch/manual/layouts.html#conversionWord).  The
+`Ec2PatternLayout` class also adds support for additional tokens:
 
 | Property | Description |
 | -------- | ----------- |
