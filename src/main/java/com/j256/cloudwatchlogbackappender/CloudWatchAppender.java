@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
 import org.slf4j.Marker;
@@ -61,7 +62,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	/** size of batch to write to cloudwatch api */
 	private static final int DEFAULT_MAX_BATCH_SIZE = 128;
 	/** time in millis to wait until we have a bunch of events to write */
-	private static final long DEFAULT_MAX_BATCH_TIME_MILLIS = 5000;
+	private static final long DEFAULT_MAX_BATCH_TIME_MILLIS = 3000;
 	/** internal event queue size before we drop log requests on the floor */
 	private static final int DEFAULT_INTERNAL_QUEUE_SIZE = 512;
 	/** create log destination group and stream when we startup */
@@ -102,6 +103,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	private boolean printRejectedEvents = DEFAULT_PRINT_REJECTED_EVENTS;
 	private boolean disableEc2Metadata;
 	private int retentionDays;
+	private boolean waitForAllEvents = true;
 
 	private CloudWatchLogsClient awsLogsClient;
 	private CloudWatchLogsClient testAwsLogsClient;
@@ -113,6 +115,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	private final ThreadLocal<Boolean> stopMessagesThreadLocal = new ThreadLocal<Boolean>();
 	private volatile boolean warningMessagePrinted;
 	private final InputLogEventComparator inputLogEventComparator = new InputLogEventComparator();
+	private final AtomicBoolean shutdown = new AtomicBoolean();
 
 	public CloudWatchAppender() {
 		// for spring
@@ -126,16 +129,11 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		if (started) {
 			return;
 		}
-		super.start();
-		started = true;
 
 		/*
 		 * NOTE: as we startup here, we can't make any log calls so we can't make any RPC calls or anything without
 		 * going recursive.
 		 */
-		if (region == null) {
-			throw new IllegalStateException("Region not set or invalid for appender: " + region);
-		}
 		if (MiscUtils.isBlank(logGroupName)) {
 			throw new IllegalStateException("Log group name not set or invalid for appender: " + logGroupName);
 		}
@@ -160,6 +158,9 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		if (emergencyAppender != null && !emergencyAppender.isStarted()) {
 			emergencyAppender.start();
 		}
+
+		super.start();
+		started = true;
 	}
 
 	@Override
@@ -169,7 +170,10 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		}
 
 		if (cloudWatchWriterThread != null) {
-			cloudWatchWriterThread.interrupt();
+			shutdown.set(true);
+			if (!waitForAllEvents) {
+				cloudWatchWriterThread.interrupt();
+			}
 			try {
 				cloudWatchWriterThread.join(1000);
 			} catch (InterruptedException e) {
@@ -341,6 +345,13 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	}
 
 	/**
+	 * Set to false (default true) to make sure that all events have been written before the appender is stopped.
+	 */
+	public void setWaitForAllEvents(boolean waitForAllEvents) {
+		this.waitForAllEvents = waitForAllEvents;
+	}
+
+	/**
 	 * For testing purposes, set the EC2 service override property to the following hostname. Can be "localhost".
 	 */
 	public static void setEc2InstanceName(String testInstanceName) {
@@ -490,9 +501,11 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 
 			List<ILoggingEvent> events = new ArrayList<ILoggingEvent>(maxBatchSize);
 			Thread thread = Thread.currentThread();
+			boolean timedOut;
 			while (!thread.isInterrupted()) {
 				long batchTimeout = System.currentTimeMillis() + maxBatchTimeMillis;
-				while (!thread.isInterrupted()) {
+				timedOut = false;
+				while (true) {
 					long timeoutMillis = batchTimeout - System.currentTimeMillis();
 					if (timeoutMillis < 0) {
 						break;
@@ -506,6 +519,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 					}
 					if (loggingEvent == null) {
 						// wait timed out
+						timedOut = true;
 						break;
 					}
 					events.add(loggingEvent);
@@ -518,13 +532,16 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 					writeEvents(events);
 					events.clear();
 				}
+				// if we are shutting down and the latest poll timed out, then we are done
+				if (timedOut && shutdown.get()) {
+					break;
+				}
 			}
 
 			/*
-			 * We have been interrupted so write all of the rest of the events and then quit
+			 * We have been interrupted or shutdown so write all of the rest of the events and then quit
 			 */
 
-			events.clear();
 			while (true) {
 				ILoggingEvent event = loggingEventQueue.poll();
 				if (event == null) {
@@ -574,6 +591,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			}
 
 			// we need this in case our RPC calls create log output which we don't want to then log again
+			stopMessagesThreadLocal.set(true);
 			Exception exception = null;
 			try {
 				stopMessagesThreadLocal.set(true);
