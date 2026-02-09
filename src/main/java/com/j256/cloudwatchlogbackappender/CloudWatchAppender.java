@@ -126,6 +126,9 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		if (started) {
 			return;
 		}
+		super.start();
+		started = true;
+
 		/*
 		 * NOTE: as we startup here, we can't make any log calls so we can't make any RPC calls or anything without
 		 * going recursive.
@@ -155,13 +158,11 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		cloudWatchWriterThread = new Thread(new CloudWatchWriter(), getClass().getSimpleName());
 		cloudWatchWriterThread.setDaemon(true);
 		cloudWatchWriterThread.start();
-
 		System.err.println(System.currentTimeMillis() + ":" + Thread.currentThread() + ": started thread");
 
 		if (emergencyAppender != null && !emergencyAppender.isStarted()) {
 			emergencyAppender.start();
 		}
-		super.start();
 	}
 
 	@Override
@@ -599,7 +600,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			// we need this in case our RPC calls create log output which we don't want to then log again
 			Exception exception = null;
 			try {
-				System.err.println(System.currentTimeMillis() + ":" + Thread.currentThread() + ": buulding logevents");
+				System.err.println(System.currentTimeMillis() + ":" + Thread.currentThread() + ": bulding logevents");
 				stopMessagesThreadLocal.set(true);
 				List<InputLogEvent> logEvents = new ArrayList<>(events.size());
 				for (ILoggingEvent event : events) {

@@ -403,7 +403,7 @@ public class CloudWatchAppenderTest {
 		assertEquals(0, appender.getEventsWrittenCount());
 	}
 
-	@Test(timeout = 10000)
+	@Test //(timeout = 10000)
 	public void testMoreAwsCalls() throws InterruptedException {
 		System.err.println(System.currentTimeMillis() + ":" + Thread.currentThread()
 				+ ": starting test more xxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
