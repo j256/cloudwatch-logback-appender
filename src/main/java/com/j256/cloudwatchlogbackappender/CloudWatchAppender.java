@@ -63,7 +63,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	/** time in millis to wait until we have a bunch of events to write */
 	private static final long DEFAULT_MAX_BATCH_TIME_MILLIS = 5000;
 	/** internal event queue size before we drop log requests on the floor */
-	private static final int DEFAULT_INTERNAL_QUEUE_SIZE = 8192;
+	private static final int DEFAULT_INTERNAL_QUEUE_SIZE = 512;
 	/** create log destination group and stream when we startup */
 	private static final boolean DEFAULT_CREATE_LOG_DESTS = true;
 	/** max time to wait in millis before dropping a log event on the floor */
@@ -223,7 +223,11 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		}
 
 		try {
-			if (!loggingEventQueue.offer(loggingEvent, maxQueueWaitTimeMillis, TimeUnit.MILLISECONDS)) {
+			System.err.println("offering message to queue");
+			if (loggingEventQueue.offer(loggingEvent, maxQueueWaitTimeMillis, TimeUnit.MILLISECONDS)) {
+				System.err.println("offered message to queue");
+			} else {
+				System.err.println("offering message to queue failed");
 				appendToEmergencyAppender(loggingEvent);
 			}
 		} catch (InterruptedException e) {
