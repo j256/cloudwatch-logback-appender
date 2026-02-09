@@ -403,17 +403,14 @@ public class CloudWatchAppenderTest {
 		assertEquals(0, appender.getEventsWrittenCount());
 	}
 
-	@Test // (timeout = 10000)
+	@Test(timeout = 20000)
 	public void testMoreAwsCalls() throws InterruptedException {
-		System.err.println(System.currentTimeMillis() + ":" + Thread.currentThread()
-				+ ": starting test more xxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
 		CloudWatchAppender appender = new CloudWatchAppender();
 		CloudWatchLogsClient logsClient = createMock(CloudWatchLogsClient.class);
 		Ec2Client ec2Client = createMock(Ec2Client.class);
 		appender.setTestAwsLogsClient(logsClient);
 		appender.setTestAmazonEc2Client(ec2Client);
 		appender.setInitialWaitTimeMillis(300);
-
 		appender.setMaxBatchSize(1);
 		appender.setMaxBatchTimeMillis(100);
 		appender.setRegion("region");
@@ -468,31 +465,18 @@ public class CloudWatchAppenderTest {
 		// =====================================
 
 		replay(logsClient, ec2Client);
-		System.err.println(System.currentTimeMillis() + ":" + Thread.currentThread() + ": starting");
 		appender.start();
 		// for coverage
 		appender.start();
-		System.err.println(System.currentTimeMillis() + ":" + Thread.currentThread() + ": started");
 		for (int i = 0; i < numTimes; i++) {
 			Thread.sleep(300);
 			appender.append(event);
 		}
-		try {
-			while (messageCount.get() < numTimes) {
-				Thread.sleep(100);
-				System.err.println(System.currentTimeMillis() + ":" + Thread.currentThread() + ": message-count is "
-						+ messageCount);
-			}
-		} finally {
-			System.err.println(
-					System.currentTimeMillis() + ":" + Thread.currentThread() + ": out of while loop: " + messageCount);
+		while (messageCount.get() < numTimes) {
+			Thread.sleep(100);
 		}
-		System.err.println(System.currentTimeMillis() + ":" + Thread.currentThread() + ": stopping the appender");
 		appender.stop();
-		System.err.println(System.currentTimeMillis() + ":" + Thread.currentThread() + ": stopped the appender");
 		verify(logsClient, ec2Client);
-		System.err.println(System.currentTimeMillis() + ":" + Thread.currentThread()
-				+ ": done with test more xxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
 	}
 
 	@Test(timeout = 10000)
