@@ -406,6 +406,7 @@ public class CloudWatchAppenderTest {
 		appender.setTestAmazonEc2Client(ec2Client);
 
 		appender.setMaxBatchSize(1);
+		appender.setRegion("region");
 		final String logGroup = "pfqoejpfqe";
 		appender.setLogGroup(logGroup);
 		final String logStream = "pffqjfqjpoqoejpfqe";
