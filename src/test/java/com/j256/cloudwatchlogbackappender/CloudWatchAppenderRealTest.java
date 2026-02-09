@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 public class CloudWatchAppenderRealTest {
 
 	static {
-		Ec2InstanceNameConverter.setInstanceName("localhost");
+		InstanceNameConverter.setInstanceName("localhost");
 	}
 
 	@Test

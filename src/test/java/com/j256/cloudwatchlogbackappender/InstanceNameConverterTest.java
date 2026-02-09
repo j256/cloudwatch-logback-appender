@@ -6,33 +6,32 @@ import static org.easymock.EasyMock.getCurrentArguments;
 import static org.easymock.EasyMock.isA;
 import static org.easymock.EasyMock.replay;
 import static org.easymock.EasyMock.verify;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import org.easymock.IAnswer;
 import org.junit.Test;
 
-import com.amazonaws.services.logs.AWSLogsClient;
-import com.amazonaws.services.logs.model.PutLogEventsRequest;
-import com.amazonaws.services.logs.model.PutLogEventsResult;
-
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.PatternLayout;
 import ch.qos.logback.classic.spi.LoggingEvent;
+import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient;
+import software.amazon.awssdk.services.cloudwatchlogs.model.PutLogEventsRequest;
+import software.amazon.awssdk.services.cloudwatchlogs.model.PutLogEventsResponse;
 
-public class Ec2InstanceIdConverterTest extends BaseConverterTest {
+public class InstanceNameConverterTest extends BaseConverterTest {
 
 	@Test(timeout = 10000)
-	public void testInstanceId() throws InterruptedException {
+	public void testInstanceName() throws InterruptedException {
 
-		String instanceId = "fewhwehpewpf";
-		Ec2InstanceIdConverter.setInstanceId(instanceId);
+		String instanceName = "jefwjpefwjewfp";
+		InstanceNameConverter.setInstanceName(instanceName);
 
-		AWSLogsClient awsLogClient = createMock(AWSLogsClient.class);
+		CloudWatchLogsClient awsLogClient = createMock(CloudWatchLogsClient.class);
 		appender.setAwsLogsClient(awsLogClient);
 
 		String prefix = "logstream-";
-		appender.setLogStream(prefix + "%instanceId");
-		final String expectedLogStream = prefix + instanceId;
+		appender.setLogStream(prefix + "%instanceName");
+		final String expectedLogStream = prefix + instanceName;
 		PatternLayout layout = new PatternLayout();
 		layout.setPattern("%msg");
 		layout.setContext(LOGGER_CONTEXT);
@@ -45,18 +44,18 @@ public class Ec2InstanceIdConverterTest extends BaseConverterTest {
 		event.setLevel(Level.DEBUG);
 		event.setMessage("message");
 
-		final PutLogEventsResult result = new PutLogEventsResult();
-		result.setNextSequenceToken("ewopjfewfj");
-		expect(awsLogClient.putLogEvents(isA(PutLogEventsRequest.class))).andAnswer(new IAnswer<PutLogEventsResult>() {
+		String sequence = "ewopjfewfj";
+		final PutLogEventsResponse result =  PutLogEventsResponse.builder().nextSequenceToken(sequence).build();
+		expect(awsLogClient.putLogEvents(isA(PutLogEventsRequest.class))).andAnswer(new IAnswer<PutLogEventsResponse>() {
 			@Override
-			public PutLogEventsResult answer() {
+			public PutLogEventsResponse answer() {
 				PutLogEventsRequest request = (PutLogEventsRequest) getCurrentArguments()[0];
-				assertEquals(LOG_GROUP, request.getLogGroupName());
-				assertEquals(expectedLogStream, request.getLogStreamName());
+				assertEquals(LOG_GROUP, request.logGroupName());
+				assertEquals(expectedLogStream, request.logStreamName());
 				return result;
 			}
 		});
-		awsLogClient.shutdown();
+		awsLogClient.close();
 
 		// =====================================
 
@@ -73,13 +72,13 @@ public class Ec2InstanceIdConverterTest extends BaseConverterTest {
 	@Test(timeout = 10000)
 	public void testInstanceNameUnknown() throws InterruptedException {
 
-		Ec2InstanceIdConverter.setInstanceId(null);
+		InstanceNameConverter.setInstanceName(null);
 
-		AWSLogsClient awsLogClient = createMock(AWSLogsClient.class);
+		CloudWatchLogsClient awsLogClient = createMock(CloudWatchLogsClient.class);
 		appender.setAwsLogsClient(awsLogClient);
 
 		String prefix = "logstream-";
-		appender.setLogStream(prefix + "%instanceId");
+		appender.setLogStream(prefix + "%instanceName");
 		final String expectedLogStream = prefix + "unknown";
 		PatternLayout layout = new PatternLayout();
 		layout.setPattern("%msg");
@@ -93,18 +92,18 @@ public class Ec2InstanceIdConverterTest extends BaseConverterTest {
 		event.setLevel(Level.DEBUG);
 		event.setMessage("message");
 
-		final PutLogEventsResult result = new PutLogEventsResult();
-		result.setNextSequenceToken("ewopjfewfj");
-		expect(awsLogClient.putLogEvents(isA(PutLogEventsRequest.class))).andAnswer(new IAnswer<PutLogEventsResult>() {
+		String sequence = "ewopjfewfj";
+		final PutLogEventsResponse result =  PutLogEventsResponse.builder().nextSequenceToken(sequence).build();
+		expect(awsLogClient.putLogEvents(isA(PutLogEventsRequest.class))).andAnswer(new IAnswer<PutLogEventsResponse>() {
 			@Override
-			public PutLogEventsResult answer() {
+			public PutLogEventsResponse answer() {
 				PutLogEventsRequest request = (PutLogEventsRequest) getCurrentArguments()[0];
-				assertEquals(LOG_GROUP, request.getLogGroupName());
-				assertEquals(expectedLogStream, request.getLogStreamName());
+				assertEquals(LOG_GROUP, request.logGroupName());
+				assertEquals(expectedLogStream, request.logStreamName());
 				return result;
 			}
 		});
-		awsLogClient.shutdown();
+		awsLogClient.close();
 
 		// =====================================
 
