@@ -8,7 +8,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
  * 
  * @author graywatson
  */
-public class Ec2InstanceIdConverter extends ClassicConverter {
+public class InstanceIdConverter extends ClassicConverter {
 
 	private static String DEFAULT_INSTANCE_ID = "unknown";
 
@@ -21,9 +21,9 @@ public class Ec2InstanceIdConverter extends ClassicConverter {
 
 	static void setInstanceId(String instanceId) {
 		if (instanceId == null) {
-			Ec2InstanceIdConverter.instanceId = DEFAULT_INSTANCE_ID;
+			InstanceIdConverter.instanceId = DEFAULT_INSTANCE_ID;
 		} else {
-			Ec2InstanceIdConverter.instanceId = instanceId;
+			InstanceIdConverter.instanceId = instanceId;
 		}
 	}
 }

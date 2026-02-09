@@ -8,7 +8,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
  * 
  * @author graywatson
  */
-public class Ec2InstanceNameConverter extends ClassicConverter {
+public class InstanceNameConverter extends ClassicConverter {
 
 	private static String DEFAULT_INSTANCE_NAME = "unknown";
 
@@ -21,9 +21,9 @@ public class Ec2InstanceNameConverter extends ClassicConverter {
 
 	static void setInstanceName(String instanceName) {
 		if (instanceName == null) {
-			Ec2InstanceNameConverter.instanceName = DEFAULT_INSTANCE_NAME;
+			InstanceNameConverter.instanceName = DEFAULT_INSTANCE_NAME;
 		} else {
-			Ec2InstanceNameConverter.instanceName = instanceName;
+			InstanceNameConverter.instanceName = instanceName;
 		}
 	}
 }

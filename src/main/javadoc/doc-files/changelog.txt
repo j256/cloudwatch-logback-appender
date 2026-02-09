@@ -1,5 +1,8 @@
-3.0: ?/??/2022
-	* Moved to Java 8 to support logback 1.3.X and slf4j version 2.X.X.
+3.0: ?/??/2026
+	* Moved to Java 11 to support logback 1.3.X and slf4j version 2.X.X.
+	* Updated to AWS v2 SDK.
+	* Added the 'disableEc2Metadata' setting if you are not running in EC2.
+	* Added the 'retentionDays' setting to add the retention period to the log-group.
 
 2.1: 2/13/2021
 	* Added code to throw if bad characters in logGroup and convert ':' to '_' in logStream.

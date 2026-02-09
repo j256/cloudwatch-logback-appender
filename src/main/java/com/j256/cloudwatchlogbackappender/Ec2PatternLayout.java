@@ -11,11 +11,11 @@ import ch.qos.logback.classic.PatternLayout;
 public class Ec2PatternLayout extends PatternLayout {
 
 	{
-		DEFAULT_CONVERTER_MAP.put("instance", Ec2InstanceNameConverter.class.getName());
-		DEFAULT_CONVERTER_MAP.put("instanceName", Ec2InstanceNameConverter.class.getName());
-		DEFAULT_CONVERTER_MAP.put("in", Ec2InstanceNameConverter.class.getName());
-		DEFAULT_CONVERTER_MAP.put("instanceId", Ec2InstanceIdConverter.class.getName());
-		DEFAULT_CONVERTER_MAP.put("iid", Ec2InstanceIdConverter.class.getName());
+		DEFAULT_CONVERTER_MAP.put("instance", InstanceNameConverter.class.getName());
+		DEFAULT_CONVERTER_MAP.put("instanceName", InstanceNameConverter.class.getName());
+		DEFAULT_CONVERTER_MAP.put("in", InstanceNameConverter.class.getName());
+		DEFAULT_CONVERTER_MAP.put("instanceId", InstanceIdConverter.class.getName());
+		DEFAULT_CONVERTER_MAP.put("iid", InstanceIdConverter.class.getName());
 		DEFAULT_CONVERTER_MAP.put("uuid", UuidConverter.class.getName());
 		DEFAULT_CONVERTER_MAP.put("hostName", HostNameConverter.class.getName());
 		DEFAULT_CONVERTER_MAP.put("host", HostNameConverter.class.getName());
