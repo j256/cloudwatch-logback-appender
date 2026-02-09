@@ -16,6 +16,7 @@ import static org.junit.Assert.fail;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.easymock.IAnswer;
 import org.junit.Before;
@@ -404,6 +405,7 @@ public class CloudWatchAppenderTest {
 		Ec2Client ec2Client = createMock(Ec2Client.class);
 		appender.setTestAwsLogsClient(logsClient);
 		appender.setTestAmazonEc2Client(ec2Client);
+		appender.setInitialWaitTimeMillis(300);
 
 		appender.setMaxBatchSize(1);
 		appender.setRegion("region");
@@ -418,6 +420,7 @@ public class CloudWatchAppenderTest {
 		layout.start();
 		appender.setLayout(layout);
 
+		final int numTimes = 2;
 		final String loggerName = "name";
 		final Level level = Level.DEBUG;
 		String message = "kuykregddwqwef4wve";
@@ -436,6 +439,7 @@ public class CloudWatchAppenderTest {
 
 		String sequence = "ewopjfewfj";
 		final PutLogEventsResponse result =  PutLogEventsResponse.builder().nextSequenceToken(sequence).build();
+		final AtomicInteger messageCount = new AtomicInteger();
 		expect(logsClient.putLogEvents(isA(PutLogEventsRequest.class))).andAnswer(new IAnswer<PutLogEventsResponse>() {
 			@Override
 			public PutLogEventsResponse answer() {
@@ -445,9 +449,10 @@ public class CloudWatchAppenderTest {
 				List<InputLogEvent> events = request.logEvents();
 				assertEquals(1, events.size());
 				assertEquals(fullMessage, events.get(0).message());
+				messageCount.incrementAndGet();
 				return result;
 			}
-		}).times(2);
+		}).times(numTimes);
 		logsClient.close();
 
 		// =====================================
@@ -456,10 +461,13 @@ public class CloudWatchAppenderTest {
 		appender.start();
 		// for coverage
 		appender.start();
-		appender.append(event);
-		Thread.sleep(300);
-		appender.append(event);
-		Thread.sleep(300);
+		for (int i = 0; i < numTimes; i++) {
+			Thread.sleep(300);
+			appender.append(event);
+		}
+		while (messageCount.get() < numTimes) {
+			Thread.sleep(100);
+		}
 		appender.stop();
 		verify(logsClient, ec2Client);
 	}
