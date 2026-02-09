@@ -223,11 +223,11 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		}
 
 		try {
-			System.err.println("offering message to queue");
+			System.err.println(System.currentTimeMillis() + ": offering message to queue");
 			if (loggingEventQueue.offer(loggingEvent, maxQueueWaitTimeMillis, TimeUnit.MILLISECONDS)) {
 				System.err.println("offered message to queue");
 			} else {
-				System.err.println("offering message to queue failed");
+				System.err.println(System.currentTimeMillis() +": offering message to queue failed");
 				appendToEmergencyAppender(loggingEvent);
 			}
 		} catch (InterruptedException e) {
