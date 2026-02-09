@@ -19,7 +19,6 @@
 		</license>
 	</licenses>
 	<properties>
-		<disableDoclint />
 		<!-- optional dependencies -->
 		<logback.version>1.4.12</logback.version>
 		<awssdk-version>2.41.9</awssdk-version>
