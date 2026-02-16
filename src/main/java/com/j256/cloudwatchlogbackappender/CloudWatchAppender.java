@@ -1,9 +1,7 @@
 package com.j256.cloudwatchlogbackappender;
 
-import java.net.Inet4Address;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -151,7 +149,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		loggingEventQueue = new ArrayBlockingQueue<ILoggingEvent>(internalQueueSize);
 
 		// create our writer thread in the background
-		cloudWatchWriterThread = new Thread(new CloudWatchWriter(), getClass().getSimpleName());
+		cloudWatchWriterThread = new Thread(new CloudWatchWriter(logStreamName), getClass().getSimpleName());
 		cloudWatchWriterThread.setDaemon(true);
 		cloudWatchWriterThread.start();
 
@@ -485,9 +483,15 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	 */
 	private class CloudWatchWriter implements Runnable {
 
+		private final String logStreamNamePattern;
+
 		private String sequenceToken;
 		private String logStreamName;
 		private boolean initialized;
+
+		public CloudWatchWriter(String logStreamNamePattern) {
+			this.logStreamNamePattern = logStreamNamePattern;
+		}
 
 		@Override
 		public void run() {
@@ -572,7 +576,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 						createLogsClient();
 					} else {
 						// mostly here for testing
-						logStreamName = buildLogStreamName();
+						logStreamName = buildLogStreamName(logStreamNamePattern);
 					}
 				} catch (Exception e) {
 					exception = e;
@@ -657,7 +661,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			} catch (Exception e) {
 				appendEvent(Level.ERROR, "Problems looking up instance-name", e);
 			}
-			logStreamName = buildLogStreamName();
+			logStreamName = buildLogStreamName(logStreamNamePattern);
 			verifyLogGroupExists(client);
 			verifyLogStreamExists(client);
 			awsLogsClient = client;
@@ -669,12 +673,13 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			DescribeLogGroupsResponse describeResponse = client.describeLogGroups(describeRequest);
 			for (LogGroup group : describeResponse.logGroups()) {
 				if (logGroupName.equals(group.logGroupName())) {
+					// it already exists
 					return;
 				}
 			}
 			if (createLogDests) {
 				CreateLogGroupRequest createRequest =
-						CreateLogGroupRequest.builder().logGroupName(logStreamName).build();
+						CreateLogGroupRequest.builder().logGroupName(logGroupName).build();
 				client.createLogGroup(createRequest);
 				if (retentionDays > 0) {
 					PutRetentionPolicyRequest retentionRequest = PutRetentionPolicyRequest.builder()
@@ -684,17 +689,20 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 					client.putRetentionPolicy(retentionRequest);
 				}
 			} else {
-				appendEvent(Level.WARN, "Log-group '" + logGroupName + "' doesn't exist and not created", null);
+				appendEvent(Level.WARN, "Log-group '" + logGroupName + "' doesn't exist and was not created", null);
 			}
 		}
 
 		private void verifyLogStreamExists(CloudWatchLogsClient client) {
-			DescribeLogStreamsRequest describeRequest =
-					DescribeLogStreamsRequest.builder().logStreamNamePrefix(logStreamName).build();
+			DescribeLogStreamsRequest describeRequest = DescribeLogStreamsRequest.builder()
+					.logGroupName(logGroupName)
+					.logStreamNamePrefix(logStreamName)
+					.build();
 			DescribeLogStreamsResponse describeResponse = client.describeLogStreams(describeRequest);
 			for (LogStream stream : describeResponse.logStreams()) {
 				if (logStreamName.equals(stream.logStreamName())) {
 					sequenceToken = stream.uploadSequenceToken();
+					// it already exists, set the sequenceToken
 					return;
 				}
 			}
@@ -705,21 +713,20 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 						.build();
 				client.createLogStream(createRequest);
 			} else {
-				appendEvent(Level.WARN, "Log-stream '" + logStreamName + "' doesn't exist and not created", null);
+				appendEvent(Level.WARN, "Log-stream '" + logStreamName + "' doesn't exist and was not created", null);
 			}
 		}
 
-		private String buildLogStreamName() {
-			String name = CloudWatchAppender.this.logStreamName;
-			if (name.indexOf('%') < 0) {
-				return name;
+		private String buildLogStreamName(String namePattern) {
+			if (namePattern.indexOf('%') < 0) {
+				return namePattern;
 			}
 			/*
 			 * Little bit of a hack here. We use one of our layout instances to format the _name_ of the log-stream.
 			 * This allows us to support the same %token that are supported by the messages.
 			 */
 			Ec2PatternLayout nameLayout = new Ec2PatternLayout();
-			nameLayout.setPattern(name);
+			nameLayout.setPattern(namePattern);
 			nameLayout.setContext(context);
 			nameLayout.start();
 			// somewhat random logging event although the time-stamp is important
@@ -728,27 +735,24 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			event.setLoggerName("logStreamName");
 			event.setMessage("log stream name");
 			event.setTimeStamp(System.currentTimeMillis());
-			name = nameLayout.doLayout(event);
+			String streamName = nameLayout.doLayout(event);
 			// replace the only character that cloudwatch barfs on: Member must satisfy regex pattern: [^:*]*
-			name = name.replace(':', '_');
-			return name;
+			streamName = streamName.replace(':', '_');
+			return streamName;
 		}
 
 		private void assignInstanceName() {
-			String name = lookupInstanceName();
-			if (name != null) {
-				InstanceNameConverter.setInstanceName(name);
+			if (InstanceNameConverter.getInstanceName() != null) {
+				String name = lookupInstanceName();
+				if (name != null) {
+					InstanceNameConverter.setInstanceName(name);
+				}
 			}
 		}
 
 		private String lookupInstanceName() {
 			if (disableEc2Metadata) {
-				try {
-					return Inet4Address.getLocalHost().getHostName();
-				} catch (UnknownHostException e) {
-					// oh well we tried
-					return null;
-				}
+				return null;
 			}
 
 			String instanceId = EC2MetadataUtils.getInstanceId();

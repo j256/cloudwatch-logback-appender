@@ -4,6 +4,7 @@
 	* Added the 'disableEc2Metadata' setting if you are not running in EC2.
 	* Added the 'retentionDays' setting to add the retention period to the log-group.
 	* Added the 'waitForAllEvents' setting (default true) that waits for all log entries before stopping the appender.
+	* Added code to work under ECS and EC2.
 
 2.1: 2/13/2021
 	* Added code to throw if bad characters in logGroup and convert ':' to '_' in logStream.

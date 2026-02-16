@@ -16,14 +16,21 @@ public class InstanceIdConverter extends ClassicConverter {
 
 	@Override
 	public String convert(ILoggingEvent event) {
+		if (instanceId == null) {
+			return DEFAULT_INSTANCE_ID;
+		} else {
+			return instanceId;
+		}
+	}
+
+	public static String getInstanceId() {
 		return instanceId;
 	}
 
-	static void setInstanceId(String instanceId) {
-		if (instanceId == null) {
-			InstanceIdConverter.instanceId = DEFAULT_INSTANCE_ID;
-		} else {
-			InstanceIdConverter.instanceId = instanceId;
-		}
+	/**
+	 * Set the instance id which could be ECS task-id or EC2 instance-id or ...
+	 */
+	public static void setInstanceId(String instanceId) {
+		InstanceIdConverter.instanceId = instanceId;
 	}
 }

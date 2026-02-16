@@ -8,6 +8,8 @@ import static org.easymock.EasyMock.replay;
 import static org.easymock.EasyMock.verify;
 import static org.junit.Assert.assertEquals;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.easymock.IAnswer;
 import org.junit.Test;
 
@@ -20,7 +22,7 @@ import software.amazon.awssdk.services.cloudwatchlogs.model.PutLogEventsResponse
 
 public class InstanceNameConverterTest extends BaseConverterTest {
 
-	@Test(timeout = 10000)
+	@Test(timeout = 5000)
 	public void testInstanceName() throws InterruptedException {
 
 		String instanceName = "jefwjpefwjewfp";
@@ -31,6 +33,8 @@ public class InstanceNameConverterTest extends BaseConverterTest {
 
 		String prefix = "logstream-";
 		appender.setLogStream(prefix + "%instanceName");
+		appender.setInitialWaitTimeMillis(0);
+		appender.setMaxBatchSize(1);
 		final String expectedLogStream = prefix + instanceName;
 		PatternLayout layout = new PatternLayout();
 		layout.setPattern("%msg");
@@ -46,12 +50,14 @@ public class InstanceNameConverterTest extends BaseConverterTest {
 
 		String sequence = "ewopjfewfj";
 		final PutLogEventsResponse result =  PutLogEventsResponse.builder().nextSequenceToken(sequence).build();
+		final AtomicInteger messageCount = new AtomicInteger();
 		expect(awsLogClient.putLogEvents(isA(PutLogEventsRequest.class))).andAnswer(new IAnswer<PutLogEventsResponse>() {
 			@Override
 			public PutLogEventsResponse answer() {
 				PutLogEventsRequest request = (PutLogEventsRequest) getCurrentArguments()[0];
-				assertEquals(LOG_GROUP, request.logGroupName());
+				assertEquals(LOG_GROUP_NAME, request.logGroupName());
 				assertEquals(expectedLogStream, request.logStreamName());
+				messageCount.incrementAndGet();
 				return result;
 			}
 		});
@@ -62,20 +68,22 @@ public class InstanceNameConverterTest extends BaseConverterTest {
 		replay(awsLogClient);
 		appender.start();
 		appender.append(event);
-		while (appender.getEventsWrittenCount() < 1) {
+		while (messageCount.get() < 1) {
 			Thread.sleep(10);
 		}
 		appender.stop();
 		verify(awsLogClient);
 	}
 
-	@Test(timeout = 10000)
+	@Test(timeout = 5000)
 	public void testInstanceNameUnknown() throws InterruptedException {
 
 		InstanceNameConverter.setInstanceName(null);
 
 		CloudWatchLogsClient awsLogClient = createMock(CloudWatchLogsClient.class);
 		appender.setAwsLogsClient(awsLogClient);
+		appender.setInitialWaitTimeMillis(0);
+		appender.setMaxBatchSize(1);
 
 		String prefix = "logstream-";
 		appender.setLogStream(prefix + "%instanceName");
@@ -98,7 +106,7 @@ public class InstanceNameConverterTest extends BaseConverterTest {
 			@Override
 			public PutLogEventsResponse answer() {
 				PutLogEventsRequest request = (PutLogEventsRequest) getCurrentArguments()[0];
-				assertEquals(LOG_GROUP, request.logGroupName());
+				assertEquals(LOG_GROUP_NAME, request.logGroupName());
 				assertEquals(expectedLogStream, request.logStreamName());
 				return result;
 			}

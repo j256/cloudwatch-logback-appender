@@ -16,14 +16,21 @@ public class InstanceNameConverter extends ClassicConverter {
 
 	@Override
 	public String convert(ILoggingEvent event) {
+		if (instanceName == null) {
+			return DEFAULT_INSTANCE_NAME;
+		} else {
+			return instanceName;
+		}
+	}
+
+	public static String getInstanceName() {
 		return instanceName;
 	}
 
-	static void setInstanceName(String instanceName) {
-		if (instanceName == null) {
-			InstanceNameConverter.instanceName = DEFAULT_INSTANCE_NAME;
-		} else {
-			InstanceNameConverter.instanceName = instanceName;
-		}
+	/**
+	 * Set the instance name which could be ECS task-id or EC2 name or ...
+	 */
+	public static void setInstanceName(String instanceName) {
+		InstanceNameConverter.instanceName = instanceName;
 	}
 }

@@ -28,6 +28,8 @@ public class SystemEnvironConverterTest extends BaseConverterTest {
 
 		CloudWatchLogsClient awsLogClient = createMock(CloudWatchLogsClient.class);
 		appender.setAwsLogsClient(awsLogClient);
+		appender.setInitialWaitTimeMillis(0);
+		appender.setMaxBatchSize(1);
 
 		String prefix = "logstream-";
 		appender.setLogStream(prefix + "%systemEnviron{" + envName + "}");
@@ -50,7 +52,7 @@ public class SystemEnvironConverterTest extends BaseConverterTest {
 			@Override
 			public PutLogEventsResponse answer() {
 				PutLogEventsRequest request = (PutLogEventsRequest) getCurrentArguments()[0];
-				assertEquals(LOG_GROUP, request.logGroupName());
+				assertEquals(LOG_GROUP_NAME, request.logGroupName());
 				assertEquals(expectedLogStream, request.logStreamName());
 				return result;
 			}
@@ -74,6 +76,8 @@ public class SystemEnvironConverterTest extends BaseConverterTest {
 
 		CloudWatchLogsClient awsLogClient = createMock(CloudWatchLogsClient.class);
 		appender.setAwsLogsClient(awsLogClient);
+		appender.setInitialWaitTimeMillis(0);
+		appender.setMaxBatchSize(1);
 
 		String prefix = "logstream-";
 		appender.setLogStream(prefix + "%systemEnviron");
@@ -96,7 +100,7 @@ public class SystemEnvironConverterTest extends BaseConverterTest {
 			@Override
 			public PutLogEventsResponse answer() {
 				PutLogEventsRequest request = (PutLogEventsRequest) getCurrentArguments()[0];
-				assertEquals(LOG_GROUP, request.logGroupName());
+				assertEquals(LOG_GROUP_NAME, request.logGroupName());
 				assertEquals(expectedLogStream, request.logStreamName());
 				return result;
 			}
@@ -142,7 +146,7 @@ public class SystemEnvironConverterTest extends BaseConverterTest {
 			@Override
 			public PutLogEventsResponse answer() {
 				PutLogEventsRequest request = (PutLogEventsRequest) getCurrentArguments()[0];
-				assertEquals(LOG_GROUP, request.logGroupName());
+				assertEquals(LOG_GROUP_NAME, request.logGroupName());
 				assertEquals(expectedLogStream, request.logStreamName());
 				return result;
 			}
