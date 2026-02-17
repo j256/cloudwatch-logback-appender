@@ -51,6 +51,8 @@ import software.amazon.awssdk.services.ec2.Ec2Client;
 
 public class CloudWatchAppenderTest {
 
+	private static final String LOG_GROUP_NAME = "test-appender-junit";
+	private static final String LOG_STREAM_NAME = "test-stream";
 	private final LoggerContext LOGGER_CONTEXT = new LoggerContext();
 
 	@Before
@@ -63,12 +65,11 @@ public class CloudWatchAppenderTest {
 		CloudWatchAppender appender = new CloudWatchAppender();
 		CloudWatchLogsClient awsLogClient = createMock(CloudWatchLogsClient.class);
 		appender.setAwsLogsClient(awsLogClient);
-
+		appender.setInitialWaitTimeMillis(0);
 		appender.setMaxBatchSize(1);
-		appender.setRegion("region");
-		final String logGroup = "pfqoejpfqe";
+		final String logGroup = LOG_GROUP_NAME;
 		appender.setLogGroup(logGroup);
-		final String logStream = "pffqjfqjpoqoejpfqe";
+		final String logStream = LOG_STREAM_NAME;
 		appender.setLogStream(logStream);
 		appender.setContext(LOGGER_CONTEXT);
 		PatternLayout layout = new PatternLayout();
@@ -124,12 +125,11 @@ public class CloudWatchAppenderTest {
 		CloudWatchAppender appender = new CloudWatchAppender();
 		CloudWatchLogsClient awsLogClient = createMock(CloudWatchLogsClient.class);
 		appender.setAwsLogsClient(awsLogClient);
-
+		appender.setInitialWaitTimeMillis(0);
 		appender.setMaxBatchTimeMillis(300);
-		appender.setRegion("region");
-		final String logGroup = "pfqoejpfqe";
+		final String logGroup = LOG_GROUP_NAME;
 		appender.setLogGroup(logGroup);
-		final String logStream = "pffqjfqjpoqoejpfqe";
+		final String logStream = LOG_STREAM_NAME;
 		appender.setLogStream(logStream);
 		appender.setContext(LOGGER_CONTEXT);
 		PatternLayout layout = new PatternLayout();
@@ -180,12 +180,11 @@ public class CloudWatchAppenderTest {
 		appender.setInitialWaitTimeMillis(0);
 		CloudWatchLogsClient awsLogClient = createMock(CloudWatchLogsClient.class);
 		appender.setAwsLogsClient(awsLogClient);
-
+		appender.setInitialWaitTimeMillis(0);
 		appender.setMaxBatchSize(1);
-		appender.setRegion("region");
-		final String logGroup = "pfqoejpfqe";
+		final String logGroup = LOG_GROUP_NAME;
 		appender.setLogGroup(logGroup);
-		final String logStream = "pffqjfqjpoqoejpfqe";
+		final String logStream = LOG_STREAM_NAME;
 		appender.setLogStream(logStream);
 		appender.setContext(LOGGER_CONTEXT);
 		PatternLayout layout = new PatternLayout();
@@ -253,15 +252,12 @@ public class CloudWatchAppenderTest {
 	public void testLogClientFailed() throws InterruptedException {
 		CloudWatchAppender appender = new CloudWatchAppender();
 		appender.setInitialWaitTimeMillis(0);
-
-		appender.setInitialWaitTimeMillis(0);
-
 		appender.setMaxBatchSize(1);
 		appender.setMaxBatchTimeMillis(100);
-		appender.setRegion("us-east-1");
-		final String logGroup = "pfqoejpfqe";
+		appender.setRegion("invalidregion");
+		final String logGroup = LOG_GROUP_NAME;
 		appender.setLogGroup(logGroup);
-		final String logStream = "pffqjfqjpoqoejpfqe";
+		final String logStream = LOG_STREAM_NAME;
 		appender.setLogStream(logStream);
 		appender.setContext(LOGGER_CONTEXT);
 		PatternLayout layout = new PatternLayout();
@@ -292,12 +288,11 @@ public class CloudWatchAppenderTest {
 		CloudWatchAppender appender = new CloudWatchAppender();
 		CloudWatchLogsClient awsLogClient = createMock(CloudWatchLogsClient.class);
 		appender.setAwsLogsClient(awsLogClient);
-
+		appender.setInitialWaitTimeMillis(0);
 		appender.setMaxBatchSize(1);
-		appender.setRegion("region");
-		final String logGroup = "pfqoejpfqe";
+		final String logGroup = LOG_GROUP_NAME;
 		appender.setLogGroup(logGroup);
-		final String logStream = "pffqjfqjpoqoejpfqe";
+		final String logStream = LOG_STREAM_NAME;
 		appender.setLogStream(logStream);
 		appender.setContext(LOGGER_CONTEXT);
 		PatternLayout layout = new PatternLayout();
@@ -357,12 +352,11 @@ public class CloudWatchAppenderTest {
 		CloudWatchAppender appender = new CloudWatchAppender();
 		CloudWatchLogsClient awsLogClient = createMock(CloudWatchLogsClient.class);
 		appender.setAwsLogsClient(awsLogClient);
-
+		appender.setInitialWaitTimeMillis(0);
 		appender.setMaxBatchSize(1);
-		appender.setRegion("region");
-		final String logGroup = "pfqoejpfqe";
+		final String logGroup = LOG_GROUP_NAME;
 		appender.setLogGroup(logGroup);
-		final String logStream = "pffqjfqjpoqoejpfqe";
+		final String logStream = LOG_STREAM_NAME;
 		appender.setLogStream(logStream);
 		appender.setContext(LOGGER_CONTEXT);
 		PatternLayout layout = new PatternLayout();
@@ -409,14 +403,13 @@ public class CloudWatchAppenderTest {
 		CloudWatchLogsClient logsClient = createMock(CloudWatchLogsClient.class);
 		Ec2Client ec2Client = createMock(Ec2Client.class);
 		appender.setTestAwsLogsClient(logsClient);
-		appender.setTestAmazonEc2Client(ec2Client);
-		appender.setInitialWaitTimeMillis(300);
+		Ec2InstanceNameUtil.setEc2Client(ec2Client);
+		appender.setInitialWaitTimeMillis(0);
 		appender.setMaxBatchSize(1);
 		appender.setMaxBatchTimeMillis(100);
-		appender.setRegion("region");
-		final String logGroup = "pfqoejpfqe";
+		final String logGroup = LOG_GROUP_NAME;
 		appender.setLogGroup(logGroup);
-		final String logStream = "pffqjfqjpoqoejpfqe";
+		final String logStream = LOG_STREAM_NAME;
 		appender.setLogStream(logStream);
 		appender.setContext(LOGGER_CONTEXT);
 		PatternLayout layout = new PatternLayout();
@@ -485,13 +478,12 @@ public class CloudWatchAppenderTest {
 		CloudWatchLogsClient logsClient = createMock(CloudWatchLogsClient.class);
 		Ec2Client ec2Client = createMock(Ec2Client.class);
 		appender.setTestAwsLogsClient(logsClient);
-		appender.setTestAmazonEc2Client(ec2Client);
-
+		Ec2InstanceNameUtil.setEc2Client(ec2Client);
+		appender.setInitialWaitTimeMillis(0);
 		appender.setMaxBatchSize(1);
-		appender.setRegion("region");
-		final String logGroup = "pfqoejpfqe";
+		final String logGroup = LOG_GROUP_NAME;
 		appender.setLogGroup(logGroup);
-		final String logStream = "pffqjfqjpoqoejpfqe";
+		final String logStream = LOG_STREAM_NAME;
 		appender.setLogStream(logStream);
 		appender.setContext(LOGGER_CONTEXT);
 		PatternLayout layout = new PatternLayout();

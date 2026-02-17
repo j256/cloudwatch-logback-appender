@@ -6,7 +6,7 @@ import static org.easymock.EasyMock.getCurrentArguments;
 import static org.easymock.EasyMock.isA;
 import static org.easymock.EasyMock.replay;
 import static org.easymock.EasyMock.verify;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -30,6 +30,8 @@ public class HostAddressConverterTest extends BaseConverterTest {
 
 		CloudWatchLogsClient awsLogClient = createMock(CloudWatchLogsClient.class);
 		appender.setAwsLogsClient(awsLogClient);
+		appender.setInitialWaitTimeMillis(0);
+		appender.setMaxBatchSize(1);
 
 		String prefix = "logstream-";
 		appender.setLogStream(prefix + "%hostAddress");
@@ -52,7 +54,7 @@ public class HostAddressConverterTest extends BaseConverterTest {
 			@Override
 			public PutLogEventsResponse answer() {
 				PutLogEventsRequest request = (PutLogEventsRequest) getCurrentArguments()[0];
-				assertEquals(LOG_GROUP, request.logGroupName());
+				assertEquals(LOG_GROUP_NAME, request.logGroupName());
 				assertEquals(expectedLogStream, request.logStreamName());
 				return result;
 			}

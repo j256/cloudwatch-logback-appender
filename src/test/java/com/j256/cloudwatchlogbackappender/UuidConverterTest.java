@@ -22,7 +22,7 @@ import software.amazon.awssdk.services.cloudwatchlogs.model.PutLogEventsResponse
 
 public class UuidConverterTest extends BaseConverterTest {
 
-	@Test // (timeout = 5000)
+	@Test(timeout = 5000)
 	public void testStuff() throws InterruptedException {
 
 		String uuidString = UUID.randomUUID().toString();
@@ -30,7 +30,8 @@ public class UuidConverterTest extends BaseConverterTest {
 
 		CloudWatchLogsClient awsLogClient = createMock(CloudWatchLogsClient.class);
 		appender.setAwsLogsClient(awsLogClient);
-
+		appender.setInitialWaitTimeMillis(0);
+		appender.setMaxBatchSize(1);
 		String prefix = "logstream-";
 		appender.setLogStream(prefix + "%uuid");
 		appender.setContext(LOGGER_CONTEXT);
@@ -48,16 +49,17 @@ public class UuidConverterTest extends BaseConverterTest {
 		event.setMessage("message");
 
 		String sequence = "ewopjfewfj";
-		final PutLogEventsResponse result =  PutLogEventsResponse.builder().nextSequenceToken(sequence).build();
-		expect(awsLogClient.putLogEvents(isA(PutLogEventsRequest.class))).andAnswer(new IAnswer<PutLogEventsResponse>() {
-			@Override
-			public PutLogEventsResponse answer() {
-				PutLogEventsRequest request = (PutLogEventsRequest) getCurrentArguments()[0];
-				assertEquals(LOG_GROUP, request.logGroupName());
-				assertEquals(expectedLogStream, request.logStreamName());
-				return result;
-			}
-		});
+		final PutLogEventsResponse result = PutLogEventsResponse.builder().nextSequenceToken(sequence).build();
+		expect(awsLogClient.putLogEvents(isA(PutLogEventsRequest.class)))
+				.andAnswer(new IAnswer<PutLogEventsResponse>() {
+					@Override
+					public PutLogEventsResponse answer() {
+						PutLogEventsRequest request = (PutLogEventsRequest) getCurrentArguments()[0];
+						assertEquals(LOG_GROUP_NAME, request.logGroupName());
+						assertEquals(expectedLogStream, request.logStreamName());
+						return result;
+					}
+				});
 		awsLogClient.close();
 
 		// =====================================

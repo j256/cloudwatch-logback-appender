@@ -3,7 +3,7 @@
 # Release script
 #
 
-LIBRARY="cloudwatch-logback-appender"
+LIBRARY=`basename $(pwd)`
 LOCAL_DIR="$HOME/svn/local/$LIBRARY"
 
 #############################################################
@@ -11,9 +11,9 @@ LOCAL_DIR="$HOME/svn/local/$LIBRARY"
 
 bad=0
 
-git status | head -1 | fgrep master > /dev/null 2>&1
+git status | head -1 | fgrep main > /dev/null 2>&1
 if [ $? -ne 0 ]; then
-    /bin/echo "Should be on master branch."
+    /bin/echo "Should be on main branch."
     git status | head -1
     bad=1
 fi
@@ -34,21 +34,12 @@ if [ $? -ne 0 ]; then
 fi
 
 #############################################################
-# check maven settings
-
-grep sonatype-nexus-snapshots $HOME/.m2/settings.xml > /dev/null 2>&1
-if [ $? -ne 0 ]; then
-    /bin/echo "Can't find sonatype info in the maven settings.xml file"
-    exit 1
-fi
-
-#############################################################
 
 release=$(grep version pom.xml | grep SNAPSHOT | head -1 | cut -f2 -d\> | cut -f1 -d\-)
 
 /bin/echo ""
 /bin/echo "------------------------------------------------------- "
-/bin/echo -n "Enter release number [$release]: "
+/bin/echo -n "Enter ${LIBRARY} release number [$release]: "
 read rel
 if [ "$rel" != "" ]; then
     release=$rel
@@ -121,10 +112,9 @@ git push --delete origin $tag 2> /dev/null
 read cont
 if [ "$cont" = "" -o "$cont" = "y" ]; then
     cd $LOCAL_DIR
-    mvn -P st release:clean || exit 1
-    mvn -P st release:prepare || ( /bin/echo "Maybe use mvn release:rollback to rollback"; exit 1 )
-    mvn -P st release:perform || ( /bin/echo "Maybe use mvn release:rollback to rollback"; exit 1 )
-
+    mvn release:clean || exit 1
+    mvn release:prepare || { /bin/echo "Maybe use mvn release:rollback to rollback"; exit 1; }
+    mvn release:perform || { /bin/echo "Maybe use mvn release:rollback to rollback"; exit 1; }
     /bin/echo ""
     /bin/echo ""
 fi

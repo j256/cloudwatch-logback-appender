@@ -30,6 +30,8 @@ public class SystemPropertyConverterTest extends BaseConverterTest {
 
 		CloudWatchLogsClient awsLogClient = createMock(CloudWatchLogsClient.class);
 		appender.setAwsLogsClient(awsLogClient);
+		appender.setInitialWaitTimeMillis(0);
+		appender.setMaxBatchSize(1);
 
 		String prefix = "logstream-";
 		appender.setLogStream(prefix + "%systemProperty{" + propName + "}");
@@ -52,7 +54,7 @@ public class SystemPropertyConverterTest extends BaseConverterTest {
 			@Override
 			public PutLogEventsResponse answer() {
 				PutLogEventsRequest request = (PutLogEventsRequest) getCurrentArguments()[0];
-				assertEquals(LOG_GROUP, request.logGroupName());
+				assertEquals(LOG_GROUP_NAME, request.logGroupName());
 				assertEquals(expectedLogStream, request.logStreamName());
 				return result;
 			}
@@ -76,6 +78,8 @@ public class SystemPropertyConverterTest extends BaseConverterTest {
 
 		CloudWatchLogsClient awsLogClient = createMock(CloudWatchLogsClient.class);
 		appender.setAwsLogsClient(awsLogClient);
+		appender.setInitialWaitTimeMillis(0);
+		appender.setMaxBatchSize(1);
 
 		String prefix = "logstream-";
 		appender.setLogStream(prefix + "%systemProperty");
@@ -98,7 +102,7 @@ public class SystemPropertyConverterTest extends BaseConverterTest {
 			@Override
 			public PutLogEventsResponse answer() {
 				PutLogEventsRequest request = (PutLogEventsRequest) getCurrentArguments()[0];
-				assertEquals(LOG_GROUP, request.logGroupName());
+				assertEquals(LOG_GROUP_NAME, request.logGroupName());
 				assertEquals(expectedLogStream, request.logStreamName());
 				return result;
 			}
@@ -122,6 +126,8 @@ public class SystemPropertyConverterTest extends BaseConverterTest {
 
 		CloudWatchLogsClient awsLogClient = createMock(CloudWatchLogsClient.class);
 		appender.setAwsLogsClient(awsLogClient);
+		appender.setInitialWaitTimeMillis(0);
+		appender.setMaxBatchSize(1);
 
 		String prefix = "logstream-";
 		appender.setLogStream(prefix + "%systemProperty{NOTKNOWNPROPERTY}");
@@ -144,7 +150,7 @@ public class SystemPropertyConverterTest extends BaseConverterTest {
 			@Override
 			public PutLogEventsResponse answer() {
 				PutLogEventsRequest request = (PutLogEventsRequest) getCurrentArguments()[0];
-				assertEquals(LOG_GROUP, request.logGroupName());
+				assertEquals(LOG_GROUP_NAME, request.logGroupName());
 				assertEquals(expectedLogStream, request.logStreamName());
 				return result;
 			}
