@@ -2,6 +2,7 @@ package com.j256.cloudwatchlogbackappender;
 
 import ch.qos.logback.classic.pattern.ClassicConverter;
 import ch.qos.logback.classic.spi.ILoggingEvent;
+import software.amazon.awssdk.regions.internal.util.EC2MetadataUtils;
 
 /**
  * Converter which knows about the instance-id.
@@ -10,26 +11,19 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
  */
 public class InstanceIdConverter extends ClassicConverter {
 
-	private static String DEFAULT_INSTANCE_ID = "unknown";
-
-	private static String instanceId = DEFAULT_INSTANCE_ID;
+	private static String instanceId;
 
 	@Override
 	public String convert(ILoggingEvent event) {
 		if (instanceId == null) {
-			return DEFAULT_INSTANCE_ID;
-		} else {
-			return instanceId;
+			instanceId = EC2MetadataUtils.getInstanceId();
+			if (instanceId == null) {
+				instanceId = CloudWatchAppender.UNKNOWN_CLOUD_NAME;
+			}
 		}
-	}
-
-	public static String getInstanceId() {
 		return instanceId;
 	}
 
-	/**
-	 * Set the instance id which could be ECS task-id or EC2 instance-id or ...
-	 */
 	public static void setInstanceId(String instanceId) {
 		InstanceIdConverter.instanceId = instanceId;
 	}

@@ -1,7 +1,8 @@
 3.0: ?/??/2026
 	* Moved to Java 11 to support logback 1.4.X and slf4j version 2.X.X.
 	* Updated to AWS v2 of the SDK.
-	* Added the 'disableEc2Metadata' setting if you are not running in EC2.
+	* Added the 'disableAwsMetadata' setting if you are not running in EC2/AWS.
+	* Added the 'taskId' expansion for running under ECS.  Uses brittle regex to avoid a json parser dependency.
 	* Added the 'retentionDays' setting to add the retention period to the log-group.
 	* Added the 'waitForAllEvents' setting (default true) that waits for all log entries before stopping the appender.
 	* Added code to work under ECS and EC2.

@@ -42,11 +42,12 @@ the log-stream – see the [logback documentation](http://logback.qos.ch/manual/
 
 | Property | Description |
 | -------- | ----------- |
-| `instanceName` | Name of the instance or ID if the name is not available. |
-| `instance` | Same as instanceName. |
 | `in` | Same as instanceName. |
 | `instanceId` | ID of the EC2 instance if available. |
 | `iid` | Same as instanceId. |
+| `instanceName` | Name of the instance or ID if the name is not available. |
+| `instance` | Same as instanceName. |
+| `taskId` | ID of the ECS task. |
 | `uuid` | Random UUID as a string |
 | `hostName` | Name of the host from `InetAddress.getLocalHost()`. |
 | `host` | Same as hostName. |
@@ -105,7 +106,7 @@ Here is the complete list of the appender properties.
 | `truncateEventMessages` | *boolean* | true | If an event it too large, should the message be truncated.  If false then it will be sent to emergency appender. |
 | `copyEvents` | *boolean* | true | Copies the event for logging by the background thread. |
 | `printRejectedEvents` | *boolean* | false | Print any rejected events to stderr if the emergency appender doesn't work. |
-| `disableEc2Metadata` | *boolean* | false | Don't try to lookup any EC2 metadata.  Set the instance-name to local hostname. |
+| `disableAwsMetadata` | *boolean* | false | Don't try to lookup any EC2 or ECS metadata. Set values to unknown. |
 | `retentionDays` | *int* | none | Optional retention period in days to add the log-group. |
 | `waitForAllEvents` | *boolean* | true | Wait for all of the events to be published before stopping the appender. |
 
@@ -187,7 +188,7 @@ Maven packages are published via [Maven Central](https://mvnrepository.com/artif
 		<groupId>com.j256.cloudwatchlogbackappender</groupId>
 		<artifactId>cloudwatchlogbackappender</artifactId>
 		<!-- NOTE: change the version to the most recent release version from the repo -->
-		<version>2.0</version>
+		<version>3.0</version>
 	</dependency>
 </dependencies>
 ```
@@ -199,14 +200,9 @@ packages.  You can add a exclusion for these packages if you want to depend on d
 
 ``` xml
 <dependency>
-	<groupId>com.amazonaws</groupId>
-	<artifactId>aws-java-sdk-logs</artifactId>
-	<version>1.11.914</version>
-</dependency>
-<dependency>
-	<groupId>com.amazonaws</groupId>
-	<artifactId>aws-java-sdk-ec2</artifactId>
-	<version>1.11.914</version>
+	<groupId>software.amazon.awssdk</groupId>
+	<artifactId>cloudwatchlogs</artifactId>
+	<version>2.41.9</version>
 </dependency>
 ```
 

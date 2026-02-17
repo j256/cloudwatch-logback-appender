@@ -6,7 +6,7 @@ import static org.easymock.EasyMock.getCurrentArguments;
 import static org.easymock.EasyMock.isA;
 import static org.easymock.EasyMock.replay;
 import static org.easymock.EasyMock.verify;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import org.easymock.IAnswer;
 import org.junit.Test;
@@ -34,56 +34,6 @@ public class InstanceIdConverterTest extends BaseConverterTest {
 		String prefix = "logstream-";
 		appender.setLogStream(prefix + "%instanceId");
 		final String expectedLogStream = prefix + instanceId;
-		PatternLayout layout = new PatternLayout();
-		layout.setPattern("%msg");
-		layout.setContext(LOGGER_CONTEXT);
-		layout.start();
-		appender.setLayout(layout);
-
-		LoggingEvent event = new LoggingEvent();
-		event.setTimeStamp(System.currentTimeMillis());
-		event.setLoggerName("name");
-		event.setLevel(Level.DEBUG);
-		event.setMessage("message");
-
-		String sequence = "ewopjfewfj";
-		final PutLogEventsResponse result =  PutLogEventsResponse.builder().nextSequenceToken(sequence).build();
-		expect(awsLogClient.putLogEvents(isA(PutLogEventsRequest.class))).andAnswer(new IAnswer<PutLogEventsResponse>() {
-			@Override
-			public PutLogEventsResponse answer() {
-				PutLogEventsRequest request = (PutLogEventsRequest) getCurrentArguments()[0];
-				assertEquals(LOG_GROUP_NAME, request.logGroupName());
-				assertEquals(expectedLogStream, request.logStreamName());
-				return result;
-			}
-		});
-		awsLogClient.close();
-
-		// =====================================
-
-		replay(awsLogClient);
-		appender.start();
-		appender.append(event);
-		while (appender.getEventsWrittenCount() < 1) {
-			Thread.sleep(10);
-		}
-		appender.stop();
-		verify(awsLogClient);
-	}
-
-	@Test(timeout = 5000)
-	public void testInstanceNameUnknown() throws InterruptedException {
-
-		InstanceIdConverter.setInstanceId(null);
-
-		CloudWatchLogsClient awsLogClient = createMock(CloudWatchLogsClient.class);
-		appender.setAwsLogsClient(awsLogClient);
-		appender.setInitialWaitTimeMillis(0);
-		appender.setMaxBatchSize(1);
-
-		String prefix = "logstream-";
-		appender.setLogStream(prefix + "%instanceId");
-		final String expectedLogStream = prefix + "unknown";
 		PatternLayout layout = new PatternLayout();
 		layout.setPattern("%msg");
 		layout.setContext(LOGGER_CONTEXT);

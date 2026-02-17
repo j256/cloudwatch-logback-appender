@@ -231,6 +231,7 @@
 			<groupId>software.amazon.awssdk</groupId>
 			<artifactId>ec2</artifactId>
 			<version>${awssdk-version}</version>
+			<optional>true</optional>
 		</dependency>
 		<!-- optional dependencies -->
 		<dependency>

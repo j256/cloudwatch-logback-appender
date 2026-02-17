@@ -403,7 +403,7 @@ public class CloudWatchAppenderTest {
 		CloudWatchLogsClient logsClient = createMock(CloudWatchLogsClient.class);
 		Ec2Client ec2Client = createMock(Ec2Client.class);
 		appender.setTestAwsLogsClient(logsClient);
-		appender.setTestAmazonEc2Client(ec2Client);
+		Ec2InstanceNameUtil.setEc2Client(ec2Client);
 		appender.setInitialWaitTimeMillis(0);
 		appender.setMaxBatchSize(1);
 		appender.setMaxBatchTimeMillis(100);
@@ -478,7 +478,7 @@ public class CloudWatchAppenderTest {
 		CloudWatchLogsClient logsClient = createMock(CloudWatchLogsClient.class);
 		Ec2Client ec2Client = createMock(Ec2Client.class);
 		appender.setTestAwsLogsClient(logsClient);
-		appender.setTestAmazonEc2Client(ec2Client);
+		Ec2InstanceNameUtil.setEc2Client(ec2Client);
 		appender.setInitialWaitTimeMillis(0);
 		appender.setMaxBatchSize(1);
 		final String logGroup = LOG_GROUP_NAME;

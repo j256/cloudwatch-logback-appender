@@ -4,23 +4,26 @@ import ch.qos.logback.classic.pattern.ClassicConverter;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 
 /**
- * Converter which knows about the instance-name
+ * Converter which knows about the instance-name. This uses the {@link Ec2InstanceNameUtil} which may throw an exception
+ * if the EC2 SDK is not on the classpath.
  * 
  * @author graywatson
  */
 public class InstanceNameConverter extends ClassicConverter {
 
-	private static String DEFAULT_INSTANCE_NAME = "unknown";
-
-	private static String instanceName = DEFAULT_INSTANCE_NAME;
+	private static String instanceName;
 
 	@Override
 	public String convert(ILoggingEvent event) {
 		if (instanceName == null) {
-			return DEFAULT_INSTANCE_NAME;
-		} else {
-			return instanceName;
+			try {
+				instanceName = Ec2InstanceNameUtil.lookupInstanceName();
+			} catch (Throwable th) {
+				// catch throwable here in case the class isn't on the classpath or something
+				instanceName = CloudWatchAppender.UNKNOWN_CLOUD_NAME;
+			}
 		}
+		return instanceName;
 	}
 
 	public static String getInstanceName() {

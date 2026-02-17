@@ -24,9 +24,7 @@ import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.Layout;
 import ch.qos.logback.core.UnsynchronizedAppenderBase;
 import ch.qos.logback.core.spi.AppenderAttachable;
-import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.regions.internal.util.EC2MetadataUtils;
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient;
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClientBuilder;
 import software.amazon.awssdk.services.cloudwatchlogs.model.CreateLogGroupRequest;
@@ -43,11 +41,6 @@ import software.amazon.awssdk.services.cloudwatchlogs.model.LogStream;
 import software.amazon.awssdk.services.cloudwatchlogs.model.PutLogEventsRequest;
 import software.amazon.awssdk.services.cloudwatchlogs.model.PutLogEventsResponse;
 import software.amazon.awssdk.services.cloudwatchlogs.model.PutRetentionPolicyRequest;
-import software.amazon.awssdk.services.ec2.Ec2Client;
-import software.amazon.awssdk.services.ec2.model.DescribeTagsRequest;
-import software.amazon.awssdk.services.ec2.model.DescribeTagsResponse;
-import software.amazon.awssdk.services.ec2.model.Filter;
-import software.amazon.awssdk.services.ec2.model.TagDescription;
 
 /**
  * CloudWatch log appender for logback.
@@ -71,17 +64,12 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	private static final long DEFAULT_INITIAL_WAIT_TIME_MILLIS = 0;
 	/** how many times to retry a cloudwatch request */
 	private static final int PUT_REQUEST_RETRY_COUNT = 2;
-	/** property looked for to find the aws access-key-id */
-	public static final String AWS_ACCESS_KEY_ID_PROPERTY = "cloudwatchappender.aws.accessKeyId";
-	/** property looked for to find the aws secret-key */
-	public static final String AWS_SECRET_KEY_PROPERTY = "cloudwatchappender.aws.secretKey";
-	/** property looked for to find the aws endpoint-url */
-	public static final String AWS_ENDPOINT_URL_PROPERTY = "cloudwatchappender.aws.endpointUrl";
-	public static final int DEFAULT_MAX_EVENT_MESSAGE_SIZE = 256 * 1024;
-	public static final boolean DEFAULT_TRUNCATE_EVENT_MESSAGES = true;
-	public static final boolean DEFAULT_COPY_EVENTS = true;
-	public static final boolean DEFAULT_PRINT_REJECTED_EVENTS = false;
-	public static final Pattern LOG_GROUP_PATTERN = Pattern.compile("[\\.\\-_/#A-Za-z0-9]+");
+	private static final int DEFAULT_MAX_EVENT_MESSAGE_SIZE = 256 * 1024;
+	private static final boolean DEFAULT_TRUNCATE_EVENT_MESSAGES = true;
+	private static final boolean DEFAULT_COPY_EVENTS = true;
+	private static final boolean DEFAULT_PRINT_REJECTED_EVENTS = false;
+	private static final Pattern LOG_GROUP_PATTERN = Pattern.compile("[\\.\\-_/#A-Za-z0-9]+");
+	public static final String UNKNOWN_CLOUD_NAME = "unknown";
 
 	private URI endpointUrl;
 	private Region region;
@@ -99,13 +87,11 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	private boolean truncateEventMessages = DEFAULT_TRUNCATE_EVENT_MESSAGES;
 	private boolean copyEvents = DEFAULT_COPY_EVENTS;
 	private boolean printRejectedEvents = DEFAULT_PRINT_REJECTED_EVENTS;
-	private boolean disableEc2Metadata;
 	private int retentionDays;
 	private boolean waitForAllEvents = true;
 
 	private CloudWatchLogsClient awsLogsClient;
 	private CloudWatchLogsClient testAwsLogsClient;
-	private Ec2Client testAmazonEc2Client;
 	private volatile long eventsWrittenCount;
 
 	private BlockingQueue<ILoggingEvent> loggingEventQueue;
@@ -307,11 +293,6 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 		this.testAwsLogsClient = testAwsLogsClient;
 	}
 
-	// not required, for testing purposes
-	void setTestAmazonEc2Client(Ec2Client testAmazonEc2Client) {
-		this.testAmazonEc2Client = testAmazonEc2Client;
-	}
-
 	public void setMaxEventMessageSize(int maxEventMessageSize) {
 		this.maxEventMessageSize = maxEventMessageSize;
 	}
@@ -334,8 +315,12 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	/**
 	 * Set to true to not try and download EC2 metadata.
 	 */
-	public void setDisableEc2Metadata(boolean disableEc2Metadata) {
-		this.disableEc2Metadata = disableEc2Metadata;
+	public void setDisableAwsMetadata(boolean disableAwsMetadata) {
+		if (disableAwsMetadata) {
+			InstanceIdConverter.setInstanceId(UNKNOWN_CLOUD_NAME);
+			InstanceNameConverter.setInstanceName(UNKNOWN_CLOUD_NAME);
+			TaskIdConverter.setTaskId(UNKNOWN_CLOUD_NAME);
+		}
 	}
 
 	public void setRetentionDays(int retentionDays) {
@@ -481,7 +466,7 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 	/**
 	 * Background thread that writes the log events to cloudwatch.
 	 */
-	private class CloudWatchWriter implements Runnable {
+	public class CloudWatchWriter implements Runnable {
 
 		private final String logStreamNamePattern;
 
@@ -563,6 +548,10 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 				events.clear();
 			}
 			// thread quits here
+		}
+
+		public void appendEvent(Level level, String message, Throwable th) {
+			append(makeEvent(level, message, th));
 		}
 
 		private void writeEvents(List<ILoggingEvent> events) {
@@ -656,11 +645,6 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			} else {
 				client = testAwsLogsClient;
 			}
-			try {
-				assignInstanceName();
-			} catch (Exception e) {
-				appendEvent(Level.ERROR, "Problems looking up instance-name", e);
-			}
 			logStreamName = buildLogStreamName(logStreamNamePattern);
 			verifyLogGroupExists(client);
 			verifyLogStreamExists(client);
@@ -739,57 +723,6 @@ public class CloudWatchAppender extends UnsynchronizedAppenderBase<ILoggingEvent
 			// replace the only character that cloudwatch barfs on: Member must satisfy regex pattern: [^:*]*
 			streamName = streamName.replace(':', '_');
 			return streamName;
-		}
-
-		private void assignInstanceName() {
-			if (InstanceNameConverter.getInstanceName() != null) {
-				String name = lookupInstanceName();
-				if (name != null) {
-					InstanceNameConverter.setInstanceName(name);
-				}
-			}
-		}
-
-		private String lookupInstanceName() {
-			if (disableEc2Metadata) {
-				return null;
-			}
-
-			String instanceId = EC2MetadataUtils.getInstanceId();
-			if (instanceId == null) {
-				return null;
-			}
-			InstanceIdConverter.setInstanceId(instanceId);
-			Ec2Client ec2Client = null;
-			try {
-				if (testAmazonEc2Client == null) {
-					ec2Client = Ec2Client.builder().region(region).build();
-				} else {
-					ec2Client = testAmazonEc2Client;
-				}
-				DescribeTagsRequest.Builder builder = DescribeTagsRequest.builder();
-				builder.filters(Filter.builder().name("resource-type").values("instance").build(),
-						Filter.builder().name("resource-id").values(instanceId).build());
-				DescribeTagsResponse result = ec2Client.describeTags(builder.build());
-				List<TagDescription> tags = result.tags();
-				for (TagDescription tag : tags) {
-					if ("Name".equals(tag.key())) {
-						return tag.value();
-					}
-				}
-				appendEvent(Level.INFO, "Could not find EC2 instance name in tags: " + tags, null);
-			} catch (AwsServiceException ase) {
-				appendEvent(Level.WARN, "Looking up EC2 instance-name threw", ase);
-			} finally {
-				if (ec2Client != null) {
-					ec2Client.close();
-				}
-			}
-			return instanceId;
-		}
-
-		private void appendEvent(Level level, String message, Throwable th) {
-			append(makeEvent(level, message, th));
 		}
 
 		private LoggingEvent makeEvent(Level level, String message, Throwable th) {
