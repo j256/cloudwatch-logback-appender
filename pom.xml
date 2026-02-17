@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.j256.cloudwatchlogbackappender</groupId>
 	<artifactId>cloudwatchlogbackappender</artifactId>
-	<version>3.0</version>
+	<version>3.1-SNAPSHOT</version>
 	<packaging>jar</packaging>
 	<name>Cloudwatch Logback Appender</name>
 	<url>https://github.com/j256/cloudwatch-logback-appender</url>
@@ -34,7 +34,7 @@
 			scm:git:ssh://git@github.com/j256/cloudwatch-logback-appender.git</connection>
 		<developerConnection>
 			scm:git:ssh://git@github.com/j256/cloudwatch-logback-appender.git</developerConnection>
-	  <tag>cloudwatchlogbackappender-3.0</tag>
+	  <tag>HEAD</tag>
   </scm>
 	<developers>
 		<developer>
