@@ -34,8 +34,8 @@ Minimal logback appender configuration:
 ```
 
 CloudWatch unfortunately does not allow multiple hosts to write to the same log-stream because of the sequence-token
-to get correct ordering.  If multiple servers are writing logs, you should configure the log-stream name with an
-instance-name suffix or something.  The `logStream` name setting uses the `Ec2PatternLayout` to generate the name, which
+needed to get correct ordering.  If multiple servers are writing logs, you should configure the log-stream name with an
+instance-id suffix or something.  The `logStream` name setting uses the `Ec2PatternLayout` to generate the name, which
 can also be used to format your log lines.  This allows you to use the standard `%token` such as `%date` in the name of
 the log-stream – see the [logback documentation](http://logback.qos.ch/manual/layouts.html#conversionWord).  The
 `Ec2PatternLayout` class also adds support for additional tokens:
@@ -45,13 +45,13 @@ the log-stream – see the [logback documentation](http://logback.qos.ch/manual/
 | `in` | Same as instanceName. |
 | `instanceId` | ID of the EC2 instance if available. |
 | `iid` | Same as instanceId. |
-| `instanceName` | Name of the instance or ID if the name is not available. |
+| `instanceName` | Name of the instance from the EC2 tags if the name is not available. |
 | `instance` | Same as instanceName. |
 | `taskId` | ID of the ECS task. |
 | `uuid` | Random UUID as a string |
 | `hostName` | Name of the host from `InetAddress.getLocalHost()`. |
 | `host` | Same as hostName. |
-| `hostAddress` | IP address of the host from `InetAddress.getLocalHost()`. |
+| `hostAddress` | IP address of the host from `InetAddress.getHostAddress()`. |
 | `address` | Same as hostAddress. |
 | `addr` | Same as hostAddress. |
 | `systemProperty` | Value of a system-property whose name is set as an {option}.  Ex: %systemProperty{os.version}`. |
@@ -94,8 +94,8 @@ Here is the complete list of the appender properties.
 | Property | Type | Default | Description |
 | -------- | ---- | ------- | ----------- |
 | `region` | *string* | none | AWS region for the CloudWatch API.  It not specified the SDK will try to figure it out. |
-| `logGroup` | *string* | none | Log group name |
-| `logStream` | *string* | none | Log stream name |
+| `logGroup` | *string* | none | Log group name pattern|
+| `logStream` | *string* | none | Log stream name pattern |
 | `maxBatchSize` | *int* | 128 | Maximum number of log events put into CloudWatch in single request. |
 | `maxBatchTimeMillis` | *long* | 5000 | Maximum time in milliseconds to collect log events to submit batch. |
 | `maxQueueWaitTimeMillis` | *long* | 100 | Maximum time in milliseconds to wait if internal queue is full before using the emergency appender (see below). |
@@ -178,6 +178,16 @@ if you want the appender to query for the ec2 instance name it is on – see `Ec
 I couldn't figure out how to restrict to all ec2 instances.  If you are only doing log requests then
 you should be able to limit it to the resource `arn:aws:logs:*:*:*`.
 
+# AWS Metadata Limitations
+
+I try to limit the dependencies in most of my libraries.  For this reason the `%instanceName` tag is not by default
+available unless the `ec2` dependency is available on the classpath.  See below.
+
+In addition, the `%taskId` tag available under ECS uses a brittle regular-expression pattern to extract the task-id from
+the JSON web response.  If this does not seem to work, you might consider using a more reliable API call under ECS and
+setting the value using the `TaskIdConverter.setTaskId(String)` method early in your application before the logging
+system initializes.
+
 # Maven Configuration
 
 Maven packages are published via [Maven Central](https://mvnrepository.com/artifact/com.j256.simplejmx/simplejmx/latest)
@@ -195,13 +205,23 @@ Maven packages are published via [Maven Central](https://mvnrepository.com/artif
 
 ## Dependencies
 
-By default the appender has dependencies on logback (duh) but also the log (cloudwatch) and ec2 AWS SDK
+By default the appender has dependencies on logback (duh) but also the CloudWatch logs AWS SDK
 packages.  You can add a exclusion for these packages if you want to depend on different versions.
 
 ``` xml
 <dependency>
 	<groupId>software.amazon.awssdk</groupId>
 	<artifactId>cloudwatchlogs</artifactId>
+	<version>2.41.9</version>
+</dependency>
+```
+
+If you are running inside of EC2, you might want to add the EC2 SDK which will allow the `%instanceName` tag to work.
+
+``` xml
+<dependency>
+	<groupId>software.amazon.awssdk</groupId>
+	<artifactId>ec2</artifactId>
 	<version>2.41.9</version>
 </dependency>
 ```
@@ -213,4 +233,4 @@ It provides functionality similar to SLF4J but with backend support for a large 
 
 # ChangeLog Release Notes
 
-See the [ChangeLog file](src/main/javadoc/doc-files/changelog.txt).
+See the [ChangeLog file](https://github.com/j256/cloudwatch-logback-appender/blob/main/src/main/javadoc/doc-files/changelog.txt).
