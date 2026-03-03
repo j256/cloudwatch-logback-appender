@@ -132,15 +132,15 @@ If no emergency appender is configured and a problem does happen then the log me
 
 # AWS Permissions
 
-You can specify the AWS CloudWatch permissions in a number of ways.  If you use the `accessKeyId` and `secretKey`
-settings in the `logback.xml` file then the appender will use those credentials directly.  You can also set the
-`cloudwatchappender.aws.accessKeyId` and `cloudwatchappender.aws.secretKey` Java System properties which will be
-used.  If neither of those are specified then the appender will use the `DefaultAWSCredentialsProviderChain` which
-looks for the access and secret keys in:
+You can specify the AWS CloudWatch permissions in a number of ways since it uses the default AWS credentials 
+provider. The default provider will attempt to identify the credentials automatically using the following checks
+which have been copied from the AWS 2.0 SDK documentation:
 
-* Environment Variables: `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` or `AWS_ACCESS_KEY` and `AWS_SECRET_KEY`
-* Java System Properties: `aws.accessKeyId` and `aws.secretKey`
-* Credential file at the default location (`~/.aws/credentials`) shared by all AWS SDKs and the AWS CLI
+* Java System Properties - ``aws.accessKeyId`` and ``aws.secretAccessKey```
+* Environment Variables - ``AWS_ACCESS_KEY_ID`` and ``AWS_SECRET_ACCESS_KEY``
+* Credential profiles file at the default location (``~/.aws/credentials``) shared by all AWS SDKs and the AWS CLIa
+* Credentials delivered through the Amazon EC2 container service if ``AWS_CONTAINER_CREDENTIALS_RELATIVE_URI``
+environment variable is set and security manager has permission to access the variable.
 * Instance profile credentials delivered through the Amazon EC2 metadata service
 
 ## IAM Permissions
