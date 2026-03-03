@@ -136,7 +136,7 @@ You can specify the AWS CloudWatch permissions in a number of ways since it uses
 provider. The default provider will attempt to identify the credentials automatically using the following checks
 which have been copied from the AWS 2.0 SDK documentation:
 
-* Java System Properties - ``aws.accessKeyId`` and ``aws.secretAccessKey```
+* Java System Properties - ``aws.accessKeyId`` and ``aws.secretAccessKey``
 * Environment Variables - ``AWS_ACCESS_KEY_ID`` and ``AWS_SECRET_ACCESS_KEY``
 * Credential profiles file at the default location (``~/.aws/credentials``) shared by all AWS SDKs and the AWS CLIa
 * Credentials delivered through the Amazon EC2 container service if ``AWS_CONTAINER_CREDENTIALS_RELATIVE_URI``
