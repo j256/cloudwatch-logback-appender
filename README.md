@@ -134,7 +134,7 @@ If no emergency appender is configured and a problem does happen then the log me
 
 You can specify the AWS CloudWatch permissions in a number of ways since it uses the default AWS credentials 
 provider. The default provider will attempt to identify the credentials automatically using the following checks
-which have been copied from the AWS 2.0 SDK documentation:
+which have been copied from the [AWS 2.0 SDK documentation](https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/credentials-chain.html):
 
 * Java System Properties - ``aws.accessKeyId`` and ``aws.secretAccessKey``
 * Environment Variables - ``AWS_ACCESS_KEY_ID`` and ``AWS_SECRET_ACCESS_KEY``
