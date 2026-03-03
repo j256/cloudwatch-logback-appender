@@ -23,11 +23,10 @@ Minimal logback appender configuration:
 
 ``` xml
 <appender name="CLOUDWATCH" class="com.j256.cloudwatchlogbackappender.CloudWatchAppender">
-	<region>us-east-1</region>
 	<logGroup>your-log-group-name-here</logGroup>
-	<logStream>your-log-stream-name-here</logStream>
+	<logStream>your-log-stream-pattern-here</logStream>
 	<layout>
-		<!-- possible layout pattern -->
+		<!-- possible layout pattern for each log line -->
 		<pattern>[%thread] %level %logger{20} - %msg%n%xThrowable</pattern>
 	</layout>
 </appender>
@@ -36,17 +35,17 @@ Minimal logback appender configuration:
 CloudWatch unfortunately does not allow multiple hosts to write to the same log-stream because of the sequence-token
 needed to get correct ordering.  If multiple servers are writing logs, you should configure the log-stream name with an
 instance-id suffix or something.  The `logStream` name setting uses the `Ec2PatternLayout` to generate the name, which
-can also be used to format your log lines.  This allows you to use the standard `%token` such as `%date` in the name of
-the log-stream – see the [logback documentation](http://logback.qos.ch/manual/layouts.html#conversionWord).  The
-`Ec2PatternLayout` class also adds support for additional tokens:
+can also be used to format your log lines.  This allows you to use the standard `%token` format such as `%date` in the
+name of the log-stream – see the [logback documentation](http://logback.qos.ch/manual/layouts.html#conversionWord).
+The `Ec2PatternLayout` class also adds support for additional tokens:
 
 | Property | Description |
 | -------- | ----------- |
 | `in` | Same as instanceName. |
-| `instanceId` | ID of the EC2 instance if available. |
-| `iid` | Same as instanceId. |
 | `instanceName` | Name of the instance from the EC2 tags if the name is not available. |
 | `instance` | Same as instanceName. |
+| `iid` | Same as instanceId. |
+| `instanceId` | ID of the EC2 instance if available. |
 | `taskId` | ID of the ECS task. |
 | `uuid` | Random UUID as a string |
 | `hostName` | Name of the host from `InetAddress.getLocalHost()`. |
@@ -73,7 +72,7 @@ date in UTC timezone, and a random UUID.
 
 **NOTE:** The instance-name and instance-id tokens will only work when running on an EC2 instance that
 supports the EC2MetadataUtils methods for looking up the information.  You can call
-`Ec2InstanceNameConverter.setInstanceName(...)` or `Ec2InstanceIdConverter.setInstanceId(...)` early in your
+`InstanceNameConverter.setInstanceName(...)` or `InstanceIdConverter.setInstanceId(...)` early in your
 program if you want to set them yourself. 
 
 **NOTE:** `logGroup` must match the regex pattern `[\.\-_/#A-Za-z0-9]+`.  `logStream` cannot contain the ':' character
@@ -93,7 +92,7 @@ Here is the complete list of the appender properties.
 
 | Property | Type | Default | Description |
 | -------- | ---- | ------- | ----------- |
-| `region` | *string* | none | AWS region for the CloudWatch API.  It not specified the SDK will try to figure it out. |
+| `region` | *string* | none | Optional AWS region for the CloudWatch API.  It not specified the SDK will try to figure it out. |
 | `logGroup` | *string* | none | Log group name pattern|
 | `logStream` | *string* | none | Log stream name pattern |
 | `maxBatchSize` | *int* | 128 | Maximum number of log events put into CloudWatch in single request. |
